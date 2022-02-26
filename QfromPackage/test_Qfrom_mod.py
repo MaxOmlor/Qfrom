@@ -105,6 +105,14 @@ class TestQfromClass(unittest.TestCase):
 # test all functions
     # __init__(self, *args) -> None:
     def test_init(self):
+        self.assertEqual(Qfrom(range(5)).to_list(), [0, 1, 2, 3, 4])
+        self.assertEqual(Qfrom(zip([1, 2, 3], [3, 2, 1])).to_list(), [(1, 3), (2, 2), (3, 1)])
+
+        self.assertEqual(Qfrom().to_list(), [])
+
+        with self.assertRaises(ValueError):
+            Qfrom(None)
+    def test_init_csv_str(self):
         csv = 'a,b,c\n1,2,3\n10, 20, 30\n'
         self.assertEqual(Qfrom(csv).to_list(), [{'a':1, 'b':2, 'c':3}, {'a':10, 'b':20, 'c':30}])
         csv = '''
@@ -115,24 +123,26 @@ class TestQfromClass(unittest.TestCase):
         self.assertEqual(Qfrom(csv).to_list(), [{'a':1, 'b':2, 'c':3}, {'a':10, 'b':20, 'c':30}])
         csv = 'a;b;c\n1;2;3\n10; 20; 30\n'
         self.assertEqual(Qfrom(csv, delimiter=';').to_list(), [{'a':1, 'b':2, 'c':3}, {'a':10, 'b':20, 'c':30}])
-        
+    def test_init_csv_file_ex_import(self):
+        test_list = [{'a':1, 'b':2, 'c':3}, {'a':10, 'b':20, 'c':30}]
+        file_path = "test csv.csv"
+
+        Qfrom(test_list).to_csv_file(file_path)
+        result = Qfrom(file_path).to_list()
+        self.assertEqual(result, test_list)
+    def test_init_csv_str(self):
         json = '[{"a":1, "b":2, "c":3}, {"a":10, "b":20, "c":30}]'
         self.assertEqual(Qfrom(json).to_list(), [{'a':1, 'b':2, 'c':3}, {'a':10, 'b':20, 'c':30}])
 
         json = "[{'a':1, 'b':2, 'c':3}, {'a':10, 'b':20, 'c':30}]"
         self.assertEqual(Qfrom(json).to_list(), [{'a':1, 'b':2, 'c':3}, {'a':10, 'b':20, 'c':30}])
-        
-        self.assertEqual(Qfrom("test csv.csv").to_list(), [{'a':1, 'b':2, 'c':3}, {'a':10, 'b':20, 'c':30}])
-        self.assertEqual(Qfrom("test json.json").to_list(), [{'a':1, 'b':2, 'c':3}, {'a':10, 'b':20, 'c':30}])
-    
-        self.assertEqual(Qfrom(range(5)).to_list(), [0, 1, 2, 3, 4])
-        self.assertEqual(Qfrom(zip([1, 2, 3], [3, 2, 1])).to_list(), [(1, 3), (2, 2), (3, 1)])
+    def test_init_json_file_ex_import(self):
+        test_list = [{'a':1, 'b':2, 'c':3}, {'a':10, 'b':20, 'c':30}]
+        file_path = "test json.json"
 
-        self.assertEqual(Qfrom().to_list(), [])
-
-        with self.assertRaises(ValueError):
-            Qfrom(None)
-
+        Qfrom(test_list).to_csv_file(file_path)
+        result = Qfrom(file_path).to_list()
+        self.assertEqual(result, test_list)
     # __call__(self, *args):
     #def test_call(self):
         # Unpack Value
@@ -498,12 +508,7 @@ class TestQfromClass(unittest.TestCase):
         self.assertEqual(q.as_parallel().to_list(), list(range(24, -1, -1)))
             
 
-# test iterables like data farme, series, list, dict, set, tuple, range, iterable
-# test exceptions like None in every para, wrong values in ervery para
 # test what appens, if first qfrom of chained qfroms is chanching
-# test if iterator is correctly updated f.e. in case of a agg
-# define how to handle dicts
-    pass
 
 class TestQfromIterClass(unittest.TestCase):
     # test all functions
