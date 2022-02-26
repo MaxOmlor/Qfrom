@@ -449,20 +449,39 @@ class Qfrom():
 
 
     def __call__(self, *args, use_iterable=False):
-        self.calculate()
         if not any(args):
+            self.calculate()
+            return self.__iterable
+
+        func = trans_func(args[0])
+
+        if not use_iterable and any(args):
+            return func(self)
+        elif not use_iterable and len(args) > 1:
+            return func(self, *args[1:])
+        
+        self.calculate()
+
+        if len(args) > 1:
+            return func(self.__iterable, *args[1:])
+        return func(self.__iterable)
+
+
+        '''if not any(args):
+            self.calculate()
             return self.__iterable
         
         func = trans_func(args[0])
 
         if use_iterable:
+            self.calculate()
             if len(args) > 1:
                 return func(self.__iterable, *args[1:])
             return func(self.__iterable)
         
         if len(args) > 1:
             return func(self, *args[1:])
-        return func(self)
+        return func(self)'''
 
     def __len__(self) -> int:
         if any(self.__operation_list):
