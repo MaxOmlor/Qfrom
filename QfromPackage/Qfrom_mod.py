@@ -23,6 +23,7 @@ from pathos.multiprocessing import ProcessingPool
 import math
 import matplotlib.pyplot as plt
 import inspect
+import requests
 
 
 def split_predicate_by_var(predicate_str):
@@ -178,7 +179,8 @@ def try_parse_str(text):
 def try_parse_str_to_collection(text, delimiter=',', headers=True):
     #try json
     try:
-        mod_json_str = text.replace("\'", '\"')
+        mod_json_str = re.sub("\'", '\"', text)
+        #mod_json_str = text.replace("\'", '\"')
         result = json.loads(mod_json_str)
         return result
     except BaseException:
@@ -202,8 +204,10 @@ def try_parse_str_to_collection(text, delimiter=',', headers=True):
 
 
 def str_to_collection(text, delimiter=',', headers=True):
-    col_text = text
+    if re.search('^(https://|http://)', text) is not None:
+        return requests.get(text).json()
 
+    col_text = text
     if os.path.exists(text):
         f_rawdata = open(text, 'rb')
         rawdata = f_rawdata.read()
@@ -465,23 +469,6 @@ class Qfrom():
         if len(args) > 1:
             return func(self.__iterable, *args[1:])
         return func(self.__iterable)
-
-
-        '''if not any(args):
-            self.calculate()
-            return self.__iterable
-        
-        func = trans_func(args[0])
-
-        if use_iterable:
-            self.calculate()
-            if len(args) > 1:
-                return func(self.__iterable, *args[1:])
-            return func(self.__iterable)
-        
-        if len(args) > 1:
-            return func(self, *args[1:])
-        return func(self)'''
 
     def __len__(self) -> int:
         if any(self.__operation_list):
