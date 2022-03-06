@@ -1,29 +1,48 @@
-from ast import operator
-from cProfile import label
-from lib2to3.pgen2.token import OP
-from multiprocessing.sharedctypes import Value
-from posixpath import split
-import re
 from collections.abc import Iterable
-import pandas
-from io import StringIO
+import pandas as pd
 import csv
-import json
-import os
-import chardet
 import numpy as np
 import enum
 from collections.abc import Iterable
-import time
+#import time
 import multiprocessing
 from multiprocessing import Pool, Process
-#from itertools import groupby
-#import dill
 from pathos.multiprocessing import ProcessingPool
-import math
 import matplotlib.pyplot as plt
 import inspect
+
+#from translate_func_mod import trans_func
+#from parse_mod import parse_str_to_collection, pandas_row_dict_iter
+
+import re
+import json
+import os
 import requests
+import chardet
+from io import StringIO
+
+
+
+#def output_correct_type(item):
+#    if isinstance(item, Iterable) and type(item) is not str:
+#        return Qfrom(item)
+#    return item
+    
+
+#def dict_kvp_iter(input_dict):
+#    for t in input_dict.items():
+#        yield t
+
+#def flatten(iterator, select_collection_func, select_result_func):
+    # optimize !!!
+#    return np.array([select_result_func(row, item) for row in iterator for item in select_collection_func(row)])
+
+#def concat_iterables_generator(iterable1, iterable2):
+#    for item in iterable1:
+#        yield item
+#    for item in iterable2:
+#        yield item
+
 
 
 def split_predicate_by_var(predicate_str):
@@ -46,10 +65,12 @@ def split_predicate_by_var(predicate_str):
         new_word += c
     str_part_list.append(new_word)
     return str_part_list
+
 def trans_item_str(item_str, pefix='item'):
     word_list = item_str.strip().split('.')
     key_list = ['"'+word+'"'if type(try_parse_str(word)) is str else word for word in word_list]
     return pefix+'['+']['.join(key_list)+']'
+
 def trans_funcv_str(func_str, to_dict=True, keys=None):
         match = re.search('^(\w+(\s*\,\s*\w+)*)\s*\:\s*(.*)$', func_str)
         if match is not None:
@@ -93,7 +114,6 @@ def trans_funcv_str(func_str, to_dict=True, keys=None):
 
 
         #predicates
-        #match = re.search('^(\w+(\.\w+)*)((\s*((==)|<|(<=)|>|(>=))\s*)|(\s+in\s+))(.+)$', func_str)
         result = Qfrom(split_predicate_by_var(func_str))
         if len(result) > 1:
             var_list = result.s(lambda x,i:(x, i))\
@@ -105,12 +125,18 @@ def trans_funcv_str(func_str, to_dict=True, keys=None):
             for var, i in var_list:
                 result[i] = var
             return 'lambda item: ' + ''.join(result)
-            #str_operator = match[3].strip()
-            #str_other_parts = func_str.split(str_operator)
-            #item_str = str_other_parts[0].strip()
-            #other_str = str_other_parts[1].strip()
-            #return 'lambda item: ' + trans_item_str(item_str) + ' ' + str_operator + ' ' + other_str
             
+        '''result = split_predicate_by_var(func_str)
+        if len(result) > 1:
+            item_id_list = [(result[i], i) for i in np.arange(len(result))]
+            item_id_list = item_id_list[1::2]
+            item_id_list = [item for item in item_id_list if item[0] not in ['and', 'or', 'not', 'in', 'is']]
+            item_id_attributes_list = [(item[0], item[1], item[0].split('.')) for item in item_id_list]
+            item_id_attributes_list = [item for item in item_id_attributes_list if (keys is not None and item[2][0] in keys) or (keys is None and type(try_parse_str(item[2][0])) is str)]
+            var_list = [(trans_item_str(item[0]), item[1]) for item in item_id_attributes_list]
+            for var, i in var_list:
+                result[i] = var
+            return 'lambda item: ' + ''.join(result)'''
 
             
         #print('typo in: ' + func)
@@ -129,34 +155,12 @@ def trans_func(func, to_dict=True):
 
     raise SyntaxError(str(func) + ' cant be interpreted as a function')
 
-def output_correct_type(item):
-    if isinstance(item, Iterable) and type(item) is not str:
-        return Qfrom(item)
-    return item
 
-def pandas_row_dict_iter(dataframe):
-    #iterator = dataframe.iterrows()
-    #func = lambda i: dict(next(iterator)[1])
-    #func = np.frompyfunc(func, 1, 1)
-    #return func(np.arange(len(dataframe)))
 
-    #return np.array([dict(row) for index, row in dataframe.iterrows()])
-    #return np.array([row.to_dict() for index, row in dataframe.iterrows()])
 
-    #col_list = dataframe.columns
-    #return np.array([{col_list[i]:row[i] for i in np.arange(len(col_list))} for row in dataframe.values])
-    
-    col_dict = {col: dataframe[col].values for col in dataframe.columns}
-    return np.array([{col:values[i] for col, values in col_dict.items()} for i in np.arange(len(dataframe))])
-    
 
-def dict_kvp_iter(input_dict):
-    for t in input_dict.items():
-        yield t
 
-def flatten(iterator, select_collection_func, select_result_func):
-    # optimize !!!
-    return np.array([select_result_func(row, item) for row in iterator for item in select_collection_func(row)])
+
 
 def try_parse_str(text):
     if text == 'None':
@@ -202,8 +206,7 @@ def try_parse_str_to_collection(text, delimiter=',', headers=True):
     
     return None
 
-
-def str_to_collection(text, delimiter=',', headers=True):
+def parse_str_to_collection(text, delimiter=',', headers=True):
     if re.search('^(https://|http://)', text) is not None:
         return requests.get(text).json()
 
@@ -220,11 +223,21 @@ def str_to_collection(text, delimiter=',', headers=True):
     
     return try_parse_str_to_collection(col_text, delimiter, headers)
 
-def concat_iterables_generator(iterable1, iterable2):
-    for item in iterable1:
-        yield item
-    for item in iterable2:
-        yield item
+def pandas_row_dict_iter(dataframe):
+    #iterator = dataframe.iterrows()
+    #func = lambda i: dict(next(iterator)[1])
+    #func = np.frompyfunc(func, 1, 1)
+    #return func(np.arange(len(dataframe)))
+
+    #return np.array([dict(row) for index, row in dataframe.iterrows()])
+    #return np.array([row.to_dict() for index, row in dataframe.iterrows()])
+
+    #col_list = dataframe.columns
+    #return np.array([{col_list[i]:row[i] for i in np.arange(len(col_list))} for row in dataframe.values])
+    
+    col_dict = {col: dataframe[col].values for col in dataframe.columns}
+    return np.array([{col:values[i] for col, values in col_dict.items()} for i in np.arange(len(dataframe))])
+
 
 handle_collection_specialcases = {
         dict: {
@@ -232,12 +245,13 @@ handle_collection_specialcases = {
             'unpack': lambda input_dict: np.array([{'key': key, 'value': value} for key, value in input_dict.items()]),
             'pack': lambda dict_list: dict((row['key'], row['value']) for row in dict_list),
         },
-        pandas.core.frame.DataFrame: {
+        pd.core.frame.DataFrame: {
             'unpack': lambda df: pandas_row_dict_iter(df),
-            'pack': lambda row_dict_list: pandas.DataFrame(row_dict_list),
+            'pack': lambda row_dict_list: pd.DataFrame(row_dict_list),
         },
     }
-def unpack_iterable(iterable):
+
+def parse_iterable_to_array(iterable):
     iter_type = type(iterable)
     if iter_type is np.ndarray:
         if len(iterable) > 0 and type(iterable[0]) is str:
@@ -262,7 +276,6 @@ def unpack_iterable(iterable):
         arr[:] = iter_list
         return arr
     return np.array(iter_list)
-
 
 def apply_func(func, data_array):
     parameter_count = len(inspect.signature(func).parameters)
@@ -389,7 +402,7 @@ def calc_operations(data_array, operation_list):
                 group_dict[key].append(value)
             group_dict = {key: Qfrom(value) for key, value in group_dict.items()}
             
-            result_array = unpack_iterable(group_dict)
+            result_array = parse_iterable_to_array(group_dict)
             continue
         if op['Operation'] == Operation.ORDER_BY:
             key_func = op['key_func']
@@ -443,9 +456,9 @@ class Qfrom():
     __slots__ = ('__iterable', '__operation_list')
     def __init__(self, iterable=[], operation_list=[], delimiter=',' , headers=True) -> None:
         if type(iterable) is str:
-            self.__iterable = unpack_iterable(str_to_collection(iterable, delimiter=delimiter, headers=headers))
+            self.__iterable = parse_iterable_to_array(parse_str_to_collection(iterable, delimiter=delimiter, headers=headers))
         elif isinstance(iterable, Iterable):
-            self.__iterable = unpack_iterable(iterable)
+            self.__iterable = parse_iterable_to_array(iterable)
         else:
             raise ValueError(str(iterable) + ' is not iterable or a known string')
 
@@ -459,10 +472,10 @@ class Qfrom():
 
         func = trans_func(args[0])
 
-        if not use_iterable and any(args):
-            return func(self)
-        elif not use_iterable and len(args) > 1:
+        if not use_iterable and len(args) > 1:
             return func(self, *args[1:])
+        elif not use_iterable and any(args):
+            return func(self)
         
         self.calculate()
 
@@ -662,12 +675,12 @@ class Qfrom():
     def any(self, predicate=None) -> bool:
         self.calculate()
         if predicate == None:
-            if len(self.__iterable)>0 and type(self.__iterable[0]) in [int, float]:
-                return np.any(self.__iterable)
-            for item in self.__iterable:
-                if item:
-                    return True
-            return False
+            #if len(self.__iterable)>0:# and type(self.__iterable[0]) in [int, float]:
+            return np.any(self.__iterable)
+            #for item in self.__iterable:
+            #    if item:
+            #        return True
+            #return False
 
         predicate_func = trans_func(predicate)
 
@@ -732,9 +745,28 @@ class Qfrom():
         col_arr = apply_func(func, self.__iterable)
         return np.var(col_arr)
 
+    # move to calc_operations
+    def normalize(self, key=None):
+        if key is None:
+            min_value = abs(self.min())
+            max_value = abs(self.max())
+            div = max(min_value, max_value)
+            if div != 0:
+                return self.select(lambda x:x/div)
+            raise ValueError('all item are 0. cant divide by 0')
+        
+        min_value = abs(self.select(lambda x:x[key]).min())
+        max_value = abs(self.select(lambda x:x[key]).max())
+        div = max(min_value, max_value)
+        if div != 0:
+            return self.select(lambda x: {**x, key:x[key]/div})
+        raise ValueError(f'all item[{key}] are 0. cant divide by 0')
+    def norm(self, key=None):
+        return self.normalize(key)
+
     def concat(self, other):
         self.calculate()
-        return Qfrom(np.concatenate((self.__iterable, unpack_iterable(other))))
+        return Qfrom(np.concatenate((self.__iterable, parse_iterable_to_array(other))))
 
     #def foreach(self, action):
     #    func = trans_func(action)
@@ -790,7 +822,7 @@ class Qfrom():
         get_value_func = trans_func(value)
         return dict((get_key_func(row), get_value_func(row)) for row in self.__iterable)
 
-    def to_dataframe(self) -> pandas.DataFrame:
+    def to_dataframe(self) -> pd.DataFrame:
         self.calculate()
         #if any(self.__iterable):
         #    data = dict()
@@ -798,7 +830,7 @@ class Qfrom():
         #        data[key] = self.select(lambda x:x[key])()
         #    return pandas.DataFrame(data)
         #else:
-        return pandas.DataFrame(self.__iterable.tolist())
+        return pd.DataFrame(self.__iterable.tolist())
 
     def to_csv_file(self, path, encoding='UTF8', delimiter=',') -> None:
         self.calculate()

@@ -1,5 +1,6 @@
 import unittest
-from Qfrom_mod import Qfrom, trans_func, trans_funcv_str
+from translate_func_mod import trans_func, trans_funcv_str
+from Qfrom_mod import Qfrom
 import pandas
 import numpy as np
 
@@ -452,6 +453,14 @@ class TestQfromClass(unittest.TestCase):
         for input_data, key, output in test_values:
             self.assertEqual(Qfrom(input_data).median(key), output)
     # var(self, key):
+    # normalize(self, key=None):
+    # norm(self, key=None):
+    def test_normalize(self):
+        self.assertEqual(Qfrom([1, 2, 3, 4]).normalize().to_list(), [0.25, 0.5, 0.75, 1])
+        self.assertEqual(Qfrom([1, 2, 3, 4]).norm().to_list(), [0.25, 0.5, 0.75, 1])
+
+        self.assertEqual(Qfrom([{'a': 1}, {'a': 2}, {'a': 3}, {'a': 4}]).normalize('a').to_list(), [{'a': 0.25}, {'a': 0.5}, {'a': 0.75}, {'a': 1}])
+        self.assertEqual(Qfrom([{'a': 1}, {'a': 2}, {'a': 3}, {'a': 4}]).norm('a').to_list(), [{'a': 0.25}, {'a': 0.5}, {'a': 0.75}, {'a': 1}])
     # concat(self, other):
     def test_concat(self):
         self.assertEqual(Qfrom([1, 2]).concat([3, 4]).to_list(), [1, 2, 3, 4])
