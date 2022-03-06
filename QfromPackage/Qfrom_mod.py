@@ -807,6 +807,8 @@ class Qfrom():
 
     def to_dict(self, key=None, value=None) -> dict:
         self.calculate()
+        if not self.any():
+            return dict()
         if key is None:
             if type(self.__iterable[0]) == dict:
                 key = lambda x:x['key']

@@ -1,6 +1,5 @@
 import unittest
-from translate_func_mod import trans_func, trans_funcv_str
-from Qfrom_mod import Qfrom
+from Qfrom_mod import trans_func, trans_funcv_str, Qfrom
 import pandas
 import numpy as np
 
@@ -488,6 +487,7 @@ class TestQfromClass(unittest.TestCase):
     # to_dict(self, key=lambda x:x[0], value=lambda x:x[1]):
     def test_to_dict(self):
         self.assertEqual(Qfrom(test_data_ordered_by_job_title_dict).to_dict(), test_data_ordered_by_job_title_dict)
+        self.assertEqual(Qfrom([]).to_dict(), dict())
     # to_dataframe(self):
     def test_to_dataframe(self):
         test_df = pandas.DataFrame(test_data_set)
