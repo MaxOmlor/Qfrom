@@ -393,14 +393,46 @@ def calc_operations(data_array, operation_list):
             
             #result_array = unpack_iterable(group_dict)
             #continue
-            key_arr = apply_func(key_func, result_array)
-            value_arr = apply_func(value_func, result_array)
+
+            #key_arr = apply_func(key_func, result_array)
+            #value_arr = apply_func(value_func, result_array)
             group_dict = dict()
-            for key, value in zip(key_arr, value_arr):
-                if key not in group_dict:
-                    group_dict[key] = []
-                group_dict[key].append(value)
-            group_dict = {key: Qfrom(value) for key, value in group_dict.items()}
+            #for key, value in zip(key_arr, value_arr):
+            #for key, value in np.column_stack((key_arr, value_arr)):
+            key_parameter_count = len(inspect.signature(key_func).parameters)
+            value_parameter_count = len(inspect.signature(value_func).parameters)
+            if key_parameter_count > 1 and value_parameter_count > 1:
+                for i in np.arange(result_array.size):
+                    item = result_array[i]
+                    key = key_func(item, i)
+                    value = value_func(item, i)
+                    if key not in group_dict:
+                        group_dict[key] = []
+                    group_dict[key].append(value)
+            elif key_parameter_count == 1 and value_parameter_count > 1:
+                for i in np.arange(result_array.size):
+                    item = result_array[i]
+                    key = key_func(item)
+                    value = value_func(item, i)
+                    if key not in group_dict:
+                        group_dict[key] = []
+                    group_dict[key].append(value)
+            elif key_parameter_count > 1 and value_parameter_count == 1:
+                for i in np.arange(result_array.size):
+                    item = result_array[i]
+                    key = key_func(item, i)
+                    value = value_func(item)
+                    if key not in group_dict:
+                        group_dict[key] = []
+                    group_dict[key].append(value)
+            else:
+                for item in result_array:
+                    key = key_func(item)
+                    value = value_func(item)
+                    if key not in group_dict:
+                        group_dict[key] = []
+                    group_dict[key].append(value)
+            #group_dict = {key: Qfrom(value) for key, value in group_dict.items()}
             
             result_array = parse_iterable_to_array(group_dict)
             continue
