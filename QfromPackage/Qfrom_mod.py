@@ -872,6 +872,28 @@ class Qfrom():
         #else:
         return pd.DataFrame(self.__iterable.tolist())
 
+    def to_csv_str(self, delimiter=',') -> str:
+        self.calculate()
+        header = None
+        data = []
+        if type(self.__iterable[0]) == dict:
+            header = [key for key in self.__iterable[0]]
+            for row in self.__iterable:
+                if type(row) != dict:
+                    raise ValueError('cant identify data pattern for csv conversion')
+                data.append([str(row[key]) for key in header])
+        
+        elif type(self.__iterable[0]) == list:
+            for row in self.__iterable:
+                if type(row) != list:
+                    raise ValueError('cant identify data pattern for csv conversion')
+                data.append([str(item) for item in row])
+        else:
+            data = [[str(row)] for row in self.__iterable]
+
+        csv_str = '\n'.join([delimiter.join(line) for line in [header]+data])
+        return csv_str
+
     def to_csv_file(self, path, encoding='UTF8', delimiter=',') -> None:
         self.calculate()
         header = None
