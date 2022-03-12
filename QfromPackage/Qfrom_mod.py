@@ -811,6 +811,12 @@ class Qfrom():
     def add(self, item) -> None:
         self.__iterable = self.concat([item])()
 
+    def shuffle(self):
+        self.calculate()
+        shuffled_arr = np.copy(self.__iterable)
+        np.random.shuffle(shuffled_arr)
+        return Qfrom(shuffled_arr)
+
     def columns(self):
         self.calculate()
         if not any(self.__iterable):
