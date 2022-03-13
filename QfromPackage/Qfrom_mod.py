@@ -816,6 +816,15 @@ class Qfrom():
         shuffled_arr = np.copy(self.__iterable)
         np.random.shuffle(shuffled_arr)
         return Qfrom(shuffled_arr)
+    
+    def first(self, key=None):
+        self.calculate()
+        if key == None:
+            return self.__iterable[0] if any(self.__iterable) else None
+        q = self.where(key)
+        if q.any():
+            return q[0]
+        return None
 
     def columns(self):
         self.calculate()
