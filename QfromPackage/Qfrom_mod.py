@@ -874,6 +874,9 @@ class Qfrom():
 
     def to_csv_str(self, delimiter=',') -> str:
         self.calculate()
+        if not any(self.__iterable):
+            return ''
+
         header = None
         data = []
         if type(self.__iterable[0]) == dict:
@@ -896,6 +899,8 @@ class Qfrom():
 
     def to_csv_file(self, path, encoding='UTF8', delimiter=',') -> None:
         self.calculate()
+        if not any(self.__iterable):
+            return
         header = None
         data = []
         if type(self.__iterable[0]) == dict:
