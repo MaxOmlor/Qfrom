@@ -485,7 +485,6 @@ class Operation(enum.Enum):
 
 
 class Qfrom():
-    __slots__ = ('__iterable', '__operation_list')
     def __init__(self, iterable=[], operation_list=[], delimiter=',' , headers=True) -> None:
         if type(iterable) is str:
             self.__iterable = parse_iterable_to_array(parse_str_to_collection(iterable, delimiter=delimiter, headers=headers))
@@ -496,30 +495,12 @@ class Qfrom():
 
         self.__operation_list = operation_list
 
-
-    def __call__(self, *args, use_iterable=False):
-        if not any(args):
-            self.calculate()
-            return self.__iterable
-
-        func = trans_func(args[0])
-
-        if not use_iterable and len(args) > 1:
-            return func(self, *args[1:])
-        elif not use_iterable and any(args):
-            return func(self)
-        
-        self.calculate()
-
-        if len(args) > 1:
-            return func(self.__iterable, *args[1:])
-        return func(self.__iterable)
-
+    #-- standart list func --------------------------------------#
     def __len__(self) -> int:
         if any(self.__operation_list):
             self.calculate()
         return self.__iterable.size
-    
+
     def __getitem__(self, key):
         if any(self.__operation_list):
             self.calculate()
@@ -545,31 +526,8 @@ class Qfrom():
         self.calculate()
         return iter(self.__iterable)
 
-    def __add__(self, other):
-        self.calculate()
-        return Qfrom(self.__iterable + other)
-    def __sub__(self, other):
-        self.calculate()
-        return Qfrom(self.__iterable - other)
-    def __mul__(self, other):
-        self.calculate()
-        return Qfrom(self.__iterable * other)
-    def __truediv__(self, other):
-        self.calculate()
-        return Qfrom(self.__iterable / other)
-    def __pow__(self, other):
-        self.calculate()
-        return Qfrom(self.__iterable ** other)
-    def __eq__(self, other) -> bool:
-        #if any(self.__operation_list):
-        self.calculate()
-        if isinstance(other, Qfrom):
-            return np.array_equal(self.__iterable, other())
-        return False
-    #def __lt__(self, other):
-    #def __le__(self, other):
-    #def __gt__(self, other):
-    #def __ge__(self, other):
+    def add(self, item) -> None:
+        self.__iterable = self.concat([item])()
 
     def __str__(self) -> str:
         self.calculate()
@@ -581,6 +539,7 @@ class Qfrom():
         return str(self)
 
 
+    #-- expanded list func --------------------------------------#
     def select(self, func):
         select_func = trans_func(func)
 
@@ -591,31 +550,6 @@ class Qfrom():
         return Qfrom(self.__iterable, operation_list=self.__operation_list+[operation])
     def s(self, func):
         return self.select(func)
-
-    def edit_column(self, col_name, func):
-        edit_func = trans_func(func)
-
-        operation = {
-            'Operation': Operation.EDIT_COLUMN,
-            'col_name': col_name,
-            'func': edit_func
-        }
-        return Qfrom(self.__iterable, operation_list=self.__operation_list+[operation])
-    def edit(self, col_name, func):
-        return self.edit_column(col_name, func)
-
-    def rename_column(self, col_name=None, new_name=None):
-        if new_name is None:
-            raise ValueError('new_name must not be None')
-
-        operation = {
-            'Operation': Operation.RENAME_COLUMN,
-            'col_name': col_name,
-            'new_name': new_name
-        }
-        return Qfrom(self.__iterable, operation_list=self.__operation_list+[operation])
-    def rename(self, col_name=None, new_name=None):
-        return self.rename_column(col_name, new_name)
 
     def where(self, func):
         where_func = trans_func(func)
@@ -671,38 +605,14 @@ class Qfrom():
     def o(self, get_key_func = lambda x:x, reverse=False):
         return self.order_by(get_key_func, reverse)
 
-    def aggregate(self, func):
-        if len(self.__iterable) == 0:
-            return None
-
-        agg_func = trans_func(func)
-
+    def first(self, key=None):
         self.calculate()
-
-        #if self.__iterable.dtype.type is np.str_:
-        agg = self.__iterable[0]
-        if len(self.__iterable) <= 1:
-            return agg
-
-        for item in self.__iterable[1:]:
-            agg = agg_func(agg, item)
-        return agg
-        #else:
-        #    agg_func_arr = np.frompyfunc(agg_func, 2, 1)
-        #    agg = self.__iterable
-        #    while len(agg) > 1:
-        #        b = agg[1::2]
-        #        if (len(agg) % 2) == 0:
-        #            a = agg[::2]
-        #        else:
-        #            a = agg[:-1:2]
-        #            b[-1] = agg_func(b[-1], agg[-1])
-        #        agg = agg_func_arr(a,b)
-        #    return agg[0]
-            
-
-    def agg(self, func):
-        return self.aggregate(func)
+        if key == None:
+            return self.__iterable[0] if any(self.__iterable) else None
+        q = self.where(key)
+        if q.any():
+            return q[0]
+        return None
 
     def any(self, predicate=None) -> bool:
         self.calculate()
@@ -732,6 +642,146 @@ class Qfrom():
             if not predicate_func(item):
                 return False
         return True
+
+    def concat(self, other):
+        self.calculate()
+        return Qfrom(np.concatenate((self.__iterable, parse_iterable_to_array(other))))
+
+    #def foreach(self, action):
+    #    func = trans_func(action)
+    #    if func is None:
+    #        raise ValueError(str(action) + ' cant be interpreted as a function')
+    #    
+    #    for item in self.__iterable:
+    #        func(item)
+
+
+
+    #-- table func ----------------------------------------------#
+    def edit_column(self, col_name, func):
+        edit_func = trans_func(func)
+
+        operation = {
+            'Operation': Operation.EDIT_COLUMN,
+            'col_name': col_name,
+            'func': edit_func
+        }
+        return Qfrom(self.__iterable, operation_list=self.__operation_list+[operation])
+    def edit(self, col_name, func):
+        return self.edit_column(col_name, func)
+
+    def rename_column(self, col_name=None, new_name=None):
+        if new_name is None:
+            raise ValueError('new_name must not be None')
+
+        operation = {
+            'Operation': Operation.RENAME_COLUMN,
+            'col_name': col_name,
+            'new_name': new_name
+        }
+        return Qfrom(self.__iterable, operation_list=self.__operation_list+[operation])
+    def rename(self, col_name=None, new_name=None):
+        return self.rename_column(col_name, new_name)
+
+    def columns(self):
+        self.calculate()
+        if not any(self.__iterable):
+            raise ValueError('There are no entries, therefore there are no columns')
+        if type(self.__iterable[0]) == dict:
+            return [key for key in self.__iterable[0]]
+        if type(self.__iterable[0]) in [list, tuple]:
+            return [i for i in range(len(self.__iterable[0]))]
+        #raise ValueError('There are no columns')
+        return None
+
+
+    #-- math func -----------------------------------------------#
+    def __add__(self, other):
+        self.calculate()
+        return Qfrom(self.__iterable + other)
+    def __sub__(self, other):
+        self.calculate()
+        return Qfrom(self.__iterable - other)
+    def __mul__(self, other):
+        self.calculate()
+        return Qfrom(self.__iterable * other)
+    def __truediv__(self, other):
+        self.calculate()
+        return Qfrom(self.__iterable / other)
+    def __pow__(self, other):
+        self.calculate()
+        return Qfrom(self.__iterable ** other)
+    def __eq__(self, other) -> bool:
+        #if any(self.__operation_list):
+        self.calculate()
+        if isinstance(other, Qfrom):
+            return np.array_equal(self.__iterable, other())
+        return False
+    #def __lt__(self, other):
+    #def __le__(self, other):
+    #def __gt__(self, other):
+    #def __ge__(self, other):
+
+    def normalize(self, key=None):
+        if key is None:
+            min_value = abs(self.min())
+            max_value = abs(self.max())
+            div = max(min_value, max_value)
+            if div != 0:
+                return self.select(lambda x:x/div)
+            raise ValueError('all item are 0. cant divide by 0')
+        
+        min_value = abs(self.select(lambda x:x[key]).min())
+        max_value = abs(self.select(lambda x:x[key]).max())
+        div = max(min_value, max_value)
+        if div != 0:
+            return self.select(lambda x: {**x, key:x[key]/div})
+        raise ValueError(f'all item[{key}] are 0. cant divide by 0')
+    def norm(self, key=None):
+        return self.normalize(key)
+
+
+    #-- random func ---------------------------------------------#
+    def shuffle(self):
+        self.calculate()
+        shuffled_arr = np.copy(self.__iterable)
+        np.random.shuffle(shuffled_arr)
+        return Qfrom(shuffled_arr)
+         
+    
+
+
+    #-- aggregation func ----------------------------------------#
+    def aggregate(self, func):
+        if len(self.__iterable) == 0:
+            return None
+
+        agg_func = trans_func(func)
+
+        self.calculate()
+
+        #if self.__iterable.dtype.type is np.str_:
+        agg = self.__iterable[0]
+        if len(self.__iterable) <= 1:
+            return agg
+
+        for item in self.__iterable[1:]:
+            agg = agg_func(agg, item)
+        return agg
+        #else:
+        #    agg_func_arr = np.frompyfunc(agg_func, 2, 1)
+        #    agg = self.__iterable
+        #    while len(agg) > 1:
+        #        b = agg[1::2]
+        #        if (len(agg) % 2) == 0:
+        #            a = agg[::2]
+        #        else:
+        #            a = agg[:-1:2]
+        #            b[-1] = agg_func(b[-1], agg[-1])
+        #        agg = agg_func_arr(a,b)
+        #    return agg[0]
+    def agg(self, func):
+        return self.aggregate(func)
 
     def min(self, func=None):
         self.calculate()
@@ -777,164 +827,29 @@ class Qfrom():
         col_arr = apply_func(func, self.__iterable)
         return np.var(col_arr)
 
-    # move to calc_operations
-    def normalize(self, key=None):
-        if key is None:
-            min_value = abs(self.min())
-            max_value = abs(self.max())
-            div = max(min_value, max_value)
-            if div != 0:
-                return self.select(lambda x:x/div)
-            raise ValueError('all item are 0. cant divide by 0')
+
+
+    #-- extend func ---------------------------------------------#
+    def __call__(self, *args, use_iterable=False):
+        if not any(args):
+            self.calculate()
+            return self.__iterable
+
+        func = trans_func(args[0])
+
+        if not use_iterable and len(args) > 1:
+            return func(self, *args[1:])
+        elif not use_iterable and any(args):
+            return func(self)
         
-        min_value = abs(self.select(lambda x:x[key]).min())
-        max_value = abs(self.select(lambda x:x[key]).max())
-        div = max(min_value, max_value)
-        if div != 0:
-            return self.select(lambda x: {**x, key:x[key]/div})
-        raise ValueError(f'all item[{key}] are 0. cant divide by 0')
-    def norm(self, key=None):
-        return self.normalize(key)
-
-    def concat(self, other):
-        self.calculate()
-        return Qfrom(np.concatenate((self.__iterable, parse_iterable_to_array(other))))
-
-    #def foreach(self, action):
-    #    func = trans_func(action)
-    #    if func is None:
-    #        raise ValueError(str(action) + ' cant be interpreted as a function')
-    #    
-    #    for item in self.__iterable:
-    #        func(item)
-
-    def add(self, item) -> None:
-        self.__iterable = self.concat([item])()
-
-    def shuffle(self):
-        self.calculate()
-        shuffled_arr = np.copy(self.__iterable)
-        np.random.shuffle(shuffled_arr)
-        return Qfrom(shuffled_arr)
-    
-    def first(self, key=None):
-        self.calculate()
-        if key == None:
-            return self.__iterable[0] if any(self.__iterable) else None
-        q = self.where(key)
-        if q.any():
-            return q[0]
-        return None
-
-    def columns(self):
-        self.calculate()
-        if not any(self.__iterable):
-            raise ValueError('There are no entries, therefore there are no columns')
-        if type(self.__iterable[0]) == dict:
-            return [key for key in self.__iterable[0]]
-        if type(self.__iterable[0]) in [list, tuple]:
-            return [i for i in range(len(self.__iterable[0]))]
-        #raise ValueError('There are no columns')
-        return None
-
-    def to_array(self):
-        self.calculate()
-        return self.__iterable
-
-    def to_list(self) -> list:
         self.calculate()
 
-        if len(self.__iterable)>0 and type(self.__iterable[0]) in [dict, list, tuple, set]:
-            return list(self.__iterable)
-        return list(self.__iterable.tolist())
-    
-    def to_set(self) -> set:
-        self.calculate()
-        return set(self.__iterable)
+        if len(args) > 1:
+            return func(self.__iterable, *args[1:])
+        return func(self.__iterable)
 
-    def to_dict(self, key=None, value=None) -> dict:
-        self.calculate()
-        if not self.any():
-            return dict()
-        if key is None:
-            if type(self.__iterable[0]) == dict:
-                key = lambda x:x['key']
-            if type(self.__iterable[0]) in [tuple, list]:
-                key = lambda x:x[0]
-        if value is None:
-            if type(self.__iterable[0]) == dict:
-                value = lambda x:x['value']
-            if type(self.__iterable[0]) in [tuple, list]:
-                value = lambda x:x[1]
-        
-        get_key_func = trans_func(key)
-        get_value_func = trans_func(value)
-        return dict((get_key_func(row), get_value_func(row)) for row in self.__iterable)
 
-    def to_dataframe(self) -> pd.DataFrame:
-        self.calculate()
-        #if any(self.__iterable):
-        #    data = dict()
-        #    for key in self.__iterable[0]:
-        #        data[key] = self.select(lambda x:x[key])()
-        #    return pandas.DataFrame(data)
-        #else:
-        return pd.DataFrame(self.__iterable.tolist())
-
-    def to_csv_str(self, delimiter=',') -> str:
-        self.calculate()
-        if not any(self.__iterable):
-            return ''
-
-        header = None
-        data = []
-        if type(self.__iterable[0]) == dict:
-            header = [key for key in self.__iterable[0]]
-            for row in self.__iterable:
-                if type(row) != dict:
-                    raise ValueError('cant identify data pattern for csv conversion')
-                data.append([str(row[key]) for key in header])
-        
-        elif type(self.__iterable[0]) == list:
-            for row in self.__iterable:
-                if type(row) != list:
-                    raise ValueError('cant identify data pattern for csv conversion')
-                data.append([str(item) for item in row])
-        else:
-            data = [[str(row)] for row in self.__iterable]
-
-        csv_str = '\n'.join([delimiter.join(line) for line in [header]+data])
-        return csv_str
-
-    def to_csv_file(self, path, encoding='UTF8', delimiter=',') -> None:
-        self.calculate()
-        if not any(self.__iterable):
-            return
-        header = None
-        data = []
-        if type(self.__iterable[0]) == dict:
-            header = [key for key in self.__iterable[0]]
-            for row in self.__iterable:
-                if type(row) != dict:
-                    raise ValueError('cant identify data pattern for csv conversion')
-                data.append([str(row[key]) for key in header])
-        
-        elif type(self.__iterable[0]) == list:
-            for row in self.__iterable:
-                if type(row) != list:
-                    raise ValueError('cant identify data pattern for csv conversion')
-                data.append([str(item) for item in row])
-        else:
-            data = [[str(row)] for row in self.__iterable]
-
-        with open(path, 'w', encoding=encoding, newline='') as f:
-            writer = csv.writer(f, delimiter=delimiter)
-            if header is not None:
-                writer.writerow(header)
-            writer.writerows(data)
-
-    #def to_json_file(self):
-
+    #-- special func --------------------------------------------#
     def calculate(self):
         if any(self.__operation_list):
             self.__iterable = calc_operations(np.copy(self.__iterable), self.__operation_list)
@@ -981,12 +896,10 @@ class Qfrom():
 
         self.__iterable = result_array
         return self
-                 
-        
+         
 
 
-
-    # plot
+    #-- plot func -----------------------------------------------#
     def plot(self, x=None, show_legend=True, title=None, x_scale_log=False, y_scale_log=False) -> None:
         self.calculate()
 
@@ -1114,7 +1027,6 @@ class Qfrom():
 
         plt.show()
 
-
     def plot_scatter(self, show_legend=True, title='Scatter plot', x_scale_log=False, y_scale_log=False) -> None:
         self.calculate()
         
@@ -1143,3 +1055,104 @@ class Qfrom():
             ax.set_title(title)
 
         plt.show()
+
+
+
+    #-- export func ---------------------------------------------#
+    def to_array(self):
+        self.calculate()
+        return self.__iterable
+
+    def to_list(self) -> list:
+        self.calculate()
+
+        if len(self.__iterable)>0 and type(self.__iterable[0]) in [dict, list, tuple, set]:
+            return list(self.__iterable)
+        return list(self.__iterable.tolist())
+    
+    def to_set(self) -> set:
+        self.calculate()
+        return set(self.__iterable)
+
+    def to_dict(self, key=None, value=None) -> dict:
+        self.calculate()
+        if not self.any():
+            return dict()
+        if key is None:
+            if type(self.__iterable[0]) == dict:
+                key = lambda x:x['key']
+            if type(self.__iterable[0]) in [tuple, list]:
+                key = lambda x:x[0]
+        if value is None:
+            if type(self.__iterable[0]) == dict:
+                value = lambda x:x['value']
+            if type(self.__iterable[0]) in [tuple, list]:
+                value = lambda x:x[1]
+        
+        get_key_func = trans_func(key)
+        get_value_func = trans_func(value)
+        return dict((get_key_func(row), get_value_func(row)) for row in self.__iterable)
+
+    def to_dataframe(self) -> pd.DataFrame:
+        self.calculate()
+        #if any(self.__iterable):
+        #    data = dict()
+        #    for key in self.__iterable[0]:
+        #        data[key] = self.select(lambda x:x[key])()
+        #    return pandas.DataFrame(data)
+        #else:
+        return pd.DataFrame(self.__iterable.tolist())
+
+    def to_csv_str(self, delimiter=',') -> str:
+        self.calculate()
+        if not any(self.__iterable):
+            return ''
+
+        header = None
+        data = []
+        if type(self.__iterable[0]) == dict:
+            header = [key for key in self.__iterable[0]]
+            for row in self.__iterable:
+                if type(row) != dict:
+                    raise ValueError('cant identify data pattern for csv conversion')
+                data.append([str(row[key]) for key in header])
+        
+        elif type(self.__iterable[0]) == list:
+            for row in self.__iterable:
+                if type(row) != list:
+                    raise ValueError('cant identify data pattern for csv conversion')
+                data.append([str(item) for item in row])
+        else:
+            data = [[str(row)] for row in self.__iterable]
+
+        csv_str = '\n'.join([delimiter.join(line) for line in [header]+data])
+        return csv_str
+
+    def to_csv_file(self, path, encoding='UTF8', delimiter=',') -> None:
+        self.calculate()
+        if not any(self.__iterable):
+            return
+        header = None
+        data = []
+        if type(self.__iterable[0]) == dict:
+            header = [key for key in self.__iterable[0]]
+            for row in self.__iterable:
+                if type(row) != dict:
+                    raise ValueError('cant identify data pattern for csv conversion')
+                data.append([str(row[key]) for key in header])
+        
+        elif type(self.__iterable[0]) == list:
+            for row in self.__iterable:
+                if type(row) != list:
+                    raise ValueError('cant identify data pattern for csv conversion')
+                data.append([str(item) for item in row])
+        else:
+            data = [[str(row)] for row in self.__iterable]
+
+        with open(path, 'w', encoding=encoding, newline='') as f:
+            writer = csv.writer(f, delimiter=delimiter)
+            if header is not None:
+                writer.writerow(header)
+            writer.writerows(data)
+
+    #def to_json_file(self):
