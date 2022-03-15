@@ -432,7 +432,7 @@ def calc_operations(data_array, operation_list):
                     if key not in group_dict:
                         group_dict[key] = []
                     group_dict[key].append(value)
-            #group_dict = {key: Qfrom(value) for key, value in group_dict.items()}
+            group_dict = {key: Qfrom(value) for key, value in group_dict.items()}
             
             result_array = parse_iterable_to_array(group_dict)
             continue

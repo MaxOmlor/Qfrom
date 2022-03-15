@@ -17,7 +17,7 @@ test_data_set = [
     {'name': 'Anna', 'age': 29, 'job_title': 'freelancer', 'manager': 'Emma'},
     {'name': 'Lena', 'age': 23, 'job_title': 'freelancer', 'manager': 'Emma'},
 ]
-'''test_data_ordered_by_job_title_dict = {
+test_data_ordered_by_job_title_dict = {
     'manager': Qfrom([
         {'name': 'Ann', 'age': 41, 'job_title': 'manager', 'manager': None},
         {'name': 'Steven', 'age': 42, 'job_title': 'manager', 'manager': 'Ann'},
@@ -30,8 +30,8 @@ test_data_set = [
     'freelancer': Qfrom([
         {'name': 'Bob', 'age': 25, 'job_title': 'freelancer', 'manager': 'Emma'},
         {'name': 'Anna', 'age': 29, 'job_title': 'freelancer', 'manager': 'Emma'},
-        {'name': 'Lena', 'age': 23, 'job_title': 'freelancer', 'manager': 'Emma'}])}'''
-test_data_ordered_by_job_title_dict = {
+        {'name': 'Lena', 'age': 23, 'job_title': 'freelancer', 'manager': 'Emma'}])}
+'''test_data_ordered_by_job_title_dict = {
     'manager': [
         {'name': 'Ann', 'age': 41, 'job_title': 'manager', 'manager': None},
         {'name': 'Steven', 'age': 42, 'job_title': 'manager', 'manager': 'Ann'},
@@ -44,7 +44,7 @@ test_data_ordered_by_job_title_dict = {
     'freelancer': [
         {'name': 'Bob', 'age': 25, 'job_title': 'freelancer', 'manager': 'Emma'},
         {'name': 'Anna', 'age': 29, 'job_title': 'freelancer', 'manager': 'Emma'},
-        {'name': 'Lena', 'age': 23, 'job_title': 'freelancer', 'manager': 'Emma'}]}
+        {'name': 'Lena', 'age': 23, 'job_title': 'freelancer', 'manager': 'Emma'}]}'''
         
 
 def add(a, b):
@@ -349,7 +349,7 @@ class TestQfromClass(unittest.TestCase):
     # group_by(self, get_key_func, get_value_func = lambda x:x):
     # g(self, get_key_func, get_value_func = lambda x:x):
     def test_group_by(self):
-        '''test_values_order_by = [
+        test_values_order_by = [
             #(data, *[order by input], output)
             ([('a', 1), ('b', 2), ('a', 3)], [lambda x:x[0], lambda x:x[1]], {'a': Qfrom([1, 3]), 'b': Qfrom([2])}),
             ([('a', 1), ('b', 2), ('a', 3)], ['0', 'x:x[1]'], {'a': Qfrom([1, 3]), 'b': Qfrom([2])}),
@@ -358,7 +358,8 @@ class TestQfromClass(unittest.TestCase):
             (test_data_set, ['job_title'], test_data_ordered_by_job_title_dict),
             (test_data_set, ["x:x['job_title']"], test_data_ordered_by_job_title_dict),
             (['a', 'b', 'c', 'd'], [lambda x,i:i%2], [{'key':0, 'value':Qfrom(['a', 'c'])}, {'key':1, 'value':Qfrom(['b', 'd'])}]),
-        ]'''
+        ]
+        '''
         test_values_order_by = [
             #(data, *[order by input], output)
             ([('a', 1), ('b', 2), ('a', 3)], [lambda x:x[0], lambda x:x[1]], {'a': [1, 3], 'b': [2]}),
@@ -369,6 +370,7 @@ class TestQfromClass(unittest.TestCase):
             (test_data_set, ["x:x['job_title']"], test_data_ordered_by_job_title_dict),
             (['a', 'b', 'c', 'd'], [lambda x,i:i%2], [{'key':0, 'value':['a', 'c']}, {'key':1, 'value':['b', 'd']}]),
         ]
+        '''
         for input_data, paras, output in test_values_order_by:
             self.assertEqual(Qfrom(input_data).group_by(*paras), Qfrom(output))
             self.assertEqual(Qfrom(input_data).g(*paras), Qfrom(output))
