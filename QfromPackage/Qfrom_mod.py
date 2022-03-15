@@ -900,11 +900,13 @@ class Qfrom():
 
 
     #-- plot func -----------------------------------------------#
-    def plot(self, x=None, show_legend=True, title=None, x_scale_log=False, y_scale_log=False) -> None:
+    def plot(self, x=None, show_legend=True, title=None, x_scale_log=False, y_scale_log=False, axis=None) -> None:
         self.calculate()
 
-        fig = plt.figure()
-        ax = fig.add_subplot(1,1,1)
+        ax = axis
+        if axis==None:
+            fig = plt.figure()
+            ax = fig.add_subplot(1,1,1)
 
         if x is None:
             x = self.columns()[0]
@@ -924,13 +926,17 @@ class Qfrom():
             ax.legend()
         if title is not None:
             ax.set_title(title)
-        plt.show()
         
-    def plot_bar(self, x=None, show_legend=True, title='Bar plot', space=0.1, y_scale_log=False) -> None:
+        if axis== None:
+            plt.show()
+        
+    def plot_bar(self, x=None, show_legend=True, title='Bar plot', space=0.1, y_scale_log=False, axis=None) -> None:
         self.calculate()
         
-        fig = plt.figure()
-        ax = fig.add_subplot(1,1,1)
+        ax = axis
+        if axis==None:
+            fig = plt.figure()
+            ax = fig.add_subplot(1,1,1)
 
         col_list = self.columns()
         if x is None and col_list is None:
@@ -945,6 +951,8 @@ class Qfrom():
                 a = col_list[i]
                 a_list = self.select(lambda item:item[a])()
                 ax.bar(x_list + bar_size*i - (bar_size/2.0)*(len(col_list)-1), a_list, label=a, width=bar_size)
+                
+                # ! replace
                 plt.xticks(x_list, x_list)
         else:
             col_list = [col for col in col_list if col != x]
@@ -955,6 +963,8 @@ class Qfrom():
                 a = col_list[i]
                 a_list = self.select(lambda item:item[a])()
                 ax.bar(x_pos + bar_size*i - (bar_size/2.0)*(len(col_list)-1), a_list, label=a, width=bar_size)
+                
+                # ! replace
                 plt.xticks(x_pos, x_list)
         
         if y_scale_log:
@@ -964,13 +974,16 @@ class Qfrom():
         if title is not None:
             ax.set_title(title)
 
-        plt.show()
+        if axis==None:
+            plt.show()
 
-    def plot_histogram(self, density=False, bins=None, stacked=False, show_legend=True, title='Histogram plot', y_scale_log=False, ylabel='Frequency') -> None:
+    def plot_histogram(self, density=False, bins=None, stacked=False, show_legend=True, title='Histogram plot', y_scale_log=False, ylabel='Frequency', axis=None) -> None:
         self.calculate()
         
-        fig = plt.figure()
-        ax = fig.add_subplot(1,1,1)
+        ax = axis
+        if axis==None:
+            fig = plt.figure()
+            ax = fig.add_subplot(1,1,1)
 
         if bins is None:
             bins = len(self.__iterable)
@@ -1001,13 +1014,16 @@ class Qfrom():
         if title is not None:
             ax.set_title(title)
 
-        plt.show()
+        if axis==None:
+            plt.show()
 
-    def plot_boxplot(self, title='Boxplot', y_scale_log=False) -> None:
+    def plot_boxplot(self, title='Boxplot', y_scale_log=False, axis=None) -> None:
         self.calculate()
         
-        fig = plt.figure()
-        ax = fig.add_subplot(1,1,1)
+        ax = axis
+        if axis==None:
+            fig = plt.figure()
+            ax = fig.add_subplot(1,1,1)
         
         col_list = self.columns()
         if col_list is None:
@@ -1025,13 +1041,16 @@ class Qfrom():
         if title is not None:
             ax.set_title(title)
 
-        plt.show()
+        if axis==None:
+            plt.show()
 
-    def plot_scatter(self, show_legend=True, title='Scatter plot', x_scale_log=False, y_scale_log=False) -> None:
+    def plot_scatter(self, show_legend=True, title='Scatter plot', x_scale_log=False, y_scale_log=False, axis=None) -> None:
         self.calculate()
         
-        fig = plt.figure()
-        ax = fig.add_subplot(1,1,1)
+        ax = axis
+        if axis==None:
+            fig = plt.figure()
+            ax = fig.add_subplot(1,1,1)
 
         #x_list = self.select(lambda item:item[x])()
         #y_list = self.select(lambda item:item[y])()
@@ -1054,7 +1073,8 @@ class Qfrom():
         if title is not None:
             ax.set_title(title)
 
-        plt.show()
+        if axis==None:
+            plt.show()
 
 
 
