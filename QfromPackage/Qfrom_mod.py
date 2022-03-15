@@ -985,22 +985,16 @@ class Qfrom():
             fig = plt.figure()
             ax = fig.add_subplot(1,1,1)
 
-        if bins is None:
-            bins = len(self.__iterable)
-        
         col_list = self.columns()
-        #if col_list is None:
-        #    ax.hist(self.__iterable, density=density, bins=bins, stacked=stacked)
-        #else:
-        #    for c in col_list:
-        #        c_list = self.select(lambda item:item[c])()
-        #        ax.hist(c_list, label=c, density=density, bins=bins, stacked=stacked)
+            
         if col_list is None:
+            if bins is None:
+                bins = len(set(self.__iterable))
             ax.hist(self.__iterable, density=density, bins=bins, stacked=stacked)
-        #elif len(col_list) == 1:
-        #    x = self.select(lambda item:item[col_list[0]])()
-        #    ax.hist(x, label=col_list[0], density=density, bins=bins, stacked=stacked)
+            
         else:
+            if bins is None:
+                bins = max([len(self.select(lambda item:item[c]).to_set()) for c in col_list])
             x_multi = [self.select(lambda item:item[c])() for c in col_list]
             ax.hist(x_multi, label=col_list, density=density, bins=bins, stacked=stacked)
 
