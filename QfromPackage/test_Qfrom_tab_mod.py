@@ -364,8 +364,11 @@ class TestQfromClass(unittest.TestCase):
         self.assertEqual([item for item in Qfrom([1, 2, 3])], [1, 2, 3])
         self.assertEqual(next(iter(Qfrom([1, 2, 3]))), 1)
 
-        q = Qfrom({'a': ['a', 'b', 'c'], 'b': ['d', 'e', 'f']})
-        self.assertEqual([a+b for a,b in q], ['ad', 'be', 'cf'])
+        q1 = Qfrom({'a': ['a', 'b', 'c'], 'b': ['d', 'e', 'f']})
+        self.assertEqual([a+b for a,b in q1], ['ad', 'be', 'cf'])
+
+        q2 = Qfrom().concat_outer(q1)
+        self.assertEqual([a+b for a,b in q2], ['ad', 'be', 'cf'])
     
     ## rename
     def test_rename(self):

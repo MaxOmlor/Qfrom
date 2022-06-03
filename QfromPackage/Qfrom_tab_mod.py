@@ -1027,15 +1027,15 @@ class Qfrom():
         raise ValueError('key must be of type int, str, tuple or list')
 
     def __iter__(self):
+        self.calculate()
         if len(self.table_dict) == 0:
             return None
-        self.calculate()
         return (
             tuple(col[i] for col in self.table_dict.values())\
                 if len(self.table_dict.keys()) > 1\
                 else\
                     first(self.table_dict.values())[i]\
-            for i in range(len(first(self.table_dict.values())))\
+            for i in range(len(first(self.table_dict.values())))
         )
     
     def append(self, item):
