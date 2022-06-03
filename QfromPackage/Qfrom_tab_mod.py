@@ -809,10 +809,11 @@ def calc_operations(table_dict, operation_list):
                 result_dict = join_id_table_dict(result_dict, other, join_outer_left, join_outer_right)
                 continue
             case Operation.CONCAT:
-                other = op['other']
+                others = op['others']
                 join_outer_left = op['join_outer_left']
                 join_outer_right = op['join_outer_right']
-                result_dict = concat_table_dict(result_dict, other, join_outer_left, join_outer_right)
+                for table_dict in others:
+                    result_dict = concat_table_dict(result_dict, table_dict, join_outer_left, join_outer_right)
                 continue
             case Operation.GROUPBY:
                 if len(result_dict) == 0:
@@ -1260,7 +1261,7 @@ class Qfrom():
     def concat(self, other, join_outer_left=False, join_outer_right=False):
         operation = {
             'Operation': Operation.CONCAT,
-            'other': other.table_dict,
+            'others': [q.table_dict for q in other] if type(other) is list else [other.table_dict],
             'join_outer_left': join_outer_left,
             'join_outer_right': join_outer_right,
         }
