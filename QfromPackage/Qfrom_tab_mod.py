@@ -952,10 +952,10 @@ class Qfrom():
 
     #-- standart list func --------------------------------------#
     def __len__(self) -> int:
-        if len(self.table_dict) == 0:
-            return 0
         if any(self.__operation_list):
             self.calculate()
+        if len(self.table_dict) == 0:
+            return 0
         return len(list(self.table_dict.values())[0])
     def size(self) -> int:
         return len(self)

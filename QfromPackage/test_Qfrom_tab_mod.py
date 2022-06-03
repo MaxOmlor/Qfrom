@@ -985,14 +985,18 @@ class TestQfromClass(unittest.TestCase):
     '''
     ## len
     def test_len(self):
-        q = Qfrom({'a': [1, 2, 3], 'b': [5, 6, 7]})
+        q1 = Qfrom({'a': [1, 2, 3], 'b': [5, 6, 7]})
+        q2 = Qfrom().concat_outer(q1)
 
-        self.assertEqual(len(q), 3)
+        self.assertEqual(len(q1), 3)
+        self.assertEqual(len(q2), 3)
     ## size
     def test_size(self):
-        q = Qfrom({'a': [1, 2, 3], 'b': [5, 6, 7]})
+        q1 = Qfrom({'a': [1, 2, 3], 'b': [5, 6, 7]})
+        q2 = Qfrom().concat_outer(q1)
 
-        self.assertEqual(q.size(), 3)
+        self.assertEqual(len(q1), 3)
+        self.assertEqual(len(q2), 3)
     
     ## calc
     ## call
