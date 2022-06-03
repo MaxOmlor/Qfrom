@@ -629,6 +629,10 @@ def join_id_table_dict(table_dict, other, join_left_outer=False, join_right_oute
         return {**table_dict, **{key:col[0:len_table_dict] for key, col in other.items()}}
 def concat_table_dict(table_dict, other, join_outer_left, join_outer_right):
     if join_outer_left and join_outer_right:
+        if len(table_dict) == 0:
+            return other
+        if len(other) == 0:
+            return table_dict
         len_table_dict = len(first(table_dict.values()))
         len_other = len(first(other.values()))
         return {key:np.append(
@@ -636,6 +640,8 @@ def concat_table_dict(table_dict, other, join_outer_left, join_outer_right):
             other[key] if key in other else np.full(len_other, None)
             ) for key in set(table_dict.keys()) | set(other.keys())}
     elif join_outer_left:
+        if len(table_dict) == 0:
+            return table_dict
         len_table_dict = len(first(table_dict.values()))
         len_other = len(first(other.values()))
         return {key:np.append(
@@ -643,12 +649,18 @@ def concat_table_dict(table_dict, other, join_outer_left, join_outer_right):
             other[key] if key in other else np.full(len_other, None)
             ) for key, col in table_dict.items()}
     elif join_outer_right:
+        if len(other) == 0:
+            return other
         len_table_dict = len(first(table_dict.values()))
         len_other = len(first(other.values()))
         return {key:np.append(
             table_dict[key] if key in table_dict else np.full(len_table_dict, None),
             col) for key, col in other.items()}
     else:
+        if len(table_dict) == 0:
+            return table_dict
+        if len(other) == 0:
+            return other
         len_table_dict = len(first(table_dict.values()))
         len_other = len(first(other.values()))
         return {key:np.append(table_dict[key], other[key]) for key in set(table_dict.keys()) & set(other.keys())}

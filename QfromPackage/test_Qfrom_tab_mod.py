@@ -741,16 +741,19 @@ class TestQfromClass(unittest.TestCase):
         q4 = Qfrom({'d': [11, 12]})
         q5 = Qfrom({'a': [3, 4], 'c': [9, 10]})
         q6 = Qfrom({'a': [2, 3, 4], 'b': [6, 7, 8]})
+        q7 = Qfrom({'a': [9, 10], 'b': [11, 12]})
 
         q_result1 = Qfrom({'a': [1, 2, 3, 4], 'b': [5, 6, 7, 8]})
-        q_result2 = Qfrom({})
+        q_result2 = Qfrom()
         q_result3 = Qfrom({'a': [1, 2, 3, 4]})
         q_result4 = Qfrom({'a': [1, 2, 2, 3, 4], 'b': [5, 6, 6, 7, 8]})
+        q_result5 = Qfrom({'a': [1, 2, 3, 4, 9, 10], 'b': [5, 6, 7, 8, 11, 12]})
 
         self.assertEqual(q1.concat(q2), q_result1)
         self.assertEqual(q3.concat(q4), q_result2)
         self.assertEqual(q1.concat(q5), q_result3)
         self.assertEqual(q1.concat(q6), q_result4)
+        self.assertEqual(q1.concat([q2, q7]), q_result5)
     ## concat_outer
     def test_concat_outer(self):
         q1 = Qfrom({'a': [1, 2], 'b': [5, 6]})
@@ -766,6 +769,7 @@ class TestQfromClass(unittest.TestCase):
         q_result4 = Qfrom({'a': [1, 2, 2, 3, 4], 'b': [5, 6, 6, 7, 8]})
 
         self.assertEqual(q1.concat_outer(q2), q_result1)
+        self.assertEqual(Qfrom().concat_outer([q1,q2]), q_result1)
         self.assertEqual(q3.concat_outer(q4), q_result2)
         self.assertEqual(q1.concat_outer(q5), q_result3)
         self.assertEqual(q1.concat_outer(q6), q_result4)
