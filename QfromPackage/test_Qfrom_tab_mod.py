@@ -988,6 +988,12 @@ class TestQfromClass(unittest.TestCase):
         self.assertEqual(q1.min(lambda a, b, i: (a+b, i)), (6, 0))
     ## min_id
     ## max
+    def test_max(self):
+        q1 = Qfrom({'a': [1, 2, 3], 'b': [5, 6, 7]})
+
+        self.assertEqual(q1.max(), (3, 7))
+        self.assertEqual(q1.max('a'), (3))
+        self.assertEqual(q1.max(lambda a, b, i: (a+b, i)), (10, 2))
     ## max_id
     ## sum
     ## mean
