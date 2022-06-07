@@ -1003,6 +1003,12 @@ class TestQfromClass(unittest.TestCase):
         self.assertEqual(q1.sum('a'), 6)
         self.assertEqual(q1.sum(lambda a, b, i: (a+b, i)), (24, 3))
     ## mean
+    def test_mean(self):
+        q1 = Qfrom({'a': [1, 2, 3], 'b': [5, 6, 7]})
+
+        self.assertEqual(q1.mean(), (2, 6))
+        self.assertEqual(q1.mean('a'), 2)
+        self.assertEqual(q1.mean(lambda a, b, i: (a+b, i)), (8, 1))
     ## median
     def test_median(self):
         q1 = Qfrom({'a': [1, 2, 3], 'b': [5, 6, 7]})
