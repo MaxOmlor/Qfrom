@@ -460,7 +460,7 @@ class TestQfromClass(unittest.TestCase):
         for input_data, key, output in test_values:
             self.assertEqual(Qfrom(input_data).sum(key), output)
     # mean(self, key):
-    def test_sum(self):
+    def test_mean(self):
         test_values = [
             #(input, predicate, output)
             ([1, 4, 2, 3], None, 2.5),
