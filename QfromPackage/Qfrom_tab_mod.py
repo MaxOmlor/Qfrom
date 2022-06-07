@@ -1418,6 +1418,7 @@ class Qfrom():
 
     #-- expanded list func --------------------------------------#
     def any(self):
+        self.calculate()
         if len(self.table_dict) == 0:
             return False
         if  len(list(self.table_dict.values())[0]) == 0:
@@ -1439,7 +1440,6 @@ class Qfrom():
             if predicate_func(item):
                 return True
         return False'''
-
 
     #-- special func --------------------------------------------#
     def calculate(self):
