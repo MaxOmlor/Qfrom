@@ -1456,6 +1456,16 @@ class Qfrom():
         if len(q_result.columns()) == 1:
             return np.argmin(first(q_result.table_dict.values()))
         return tuple(np.argmin(col) for col in q_result.table_dict.values())
+    
+    def min_item(self, *args):
+        self.calculate()
+        q_result = self.select(*args) if len(args) > 0 else self
+        q_result.calculate()
+        if len(q_result.columns()) == 1:
+            id = int(np.argmin(first(q_result.table_dict.values())))
+            return self[id]
+        ids = tuple(int(np.argmin(col)) for col in q_result.table_dict.values())
+        return tuple(self[i] for i in ids)
 
     def max(self, *args):
         self.calculate()
