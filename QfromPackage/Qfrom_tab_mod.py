@@ -1440,6 +1440,14 @@ class Qfrom():
             if predicate_func(item):
                 return True
         return False'''
+    
+    def min(self, *args):
+        self.calculate()
+        q_result = self.select(*args) if len(args) > 0 else self
+        q_result.calculate()
+        if len(q_result.columns()) == 1:
+            return first(q_result.table_dict.values()).min()
+        return tuple(col.min() for col in q_result.table_dict.values())
 
     #-- special func --------------------------------------------#
     def calculate(self):

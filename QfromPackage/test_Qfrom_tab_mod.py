@@ -175,7 +175,9 @@ class TestQfromClass(unittest.TestCase):
     ## any
     ## all
     ## min
+    ## min_id
     ## max
+    ## max_id
     ## sum
     ## mean
     ## median
@@ -976,13 +978,21 @@ class TestQfromClass(unittest.TestCase):
         self.assertTrue(q.all('a>0'))
         self.assertFalse(q.all(lambda a: a>1))
         self.assertFalse(q.all('a>1'))
+    '''
     ## min
+    def test_min(self):
+        q1 = Qfrom({'a': [1, 2, 3], 'b': [5, 6, 7]})
+
+        self.assertEqual(q1.min(), (1, 5))
+        self.assertEqual(q1.min('a'), (1))
+        self.assertEqual(q1.min(lambda a, b, i: (a+b, i)), (6, 0))
+    ## min_id
     ## max
+    ## max_id
     ## sum
     ## mean
     ## median
     ## var
-    '''
     ## len
     def test_len(self):
         q1 = Qfrom({'a': [1, 2, 3], 'b': [5, 6, 7]})
