@@ -1482,6 +1482,16 @@ class Qfrom():
         if len(q_result.columns()) == 1:
             return int(np.argmax(first(q_result.table_dict.values())))
         return tuple(int(np.argmax(col)) for col in q_result.table_dict.values())
+    
+    def max_item(self, *args):
+        self.calculate()
+        q_result = self.select(*args) if len(args) > 0 else self
+        q_result.calculate()
+        if len(q_result.columns()) == 1:
+            id = int(np.argmax(first(q_result.table_dict.values())))
+            return self[id]
+        ids = tuple(int(np.argmax(col)) for col in q_result.table_dict.values())
+        return tuple(self[i] for i in ids)
 
     def sum(self, *args):
         self.calculate()
