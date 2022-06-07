@@ -984,7 +984,7 @@ class TestQfromClass(unittest.TestCase):
         q1 = Qfrom({'a': [1, 2, 3], 'b': [5, 6, 7]})
 
         self.assertEqual(q1.min(), (1, 5))
-        self.assertEqual(q1.min('a'), (1))
+        self.assertEqual(q1.min('a'), 1)
         self.assertEqual(q1.min(lambda a, b, i: (a+b, i)), (6, 0))
     ## min_id
     ## max
@@ -992,12 +992,24 @@ class TestQfromClass(unittest.TestCase):
         q1 = Qfrom({'a': [1, 2, 3], 'b': [5, 6, 7]})
 
         self.assertEqual(q1.max(), (3, 7))
-        self.assertEqual(q1.max('a'), (3))
+        self.assertEqual(q1.max('a'), 3)
         self.assertEqual(q1.max(lambda a, b, i: (a+b, i)), (10, 2))
     ## max_id
     ## sum
+    def test_sum(self):
+        q1 = Qfrom({'a': [1, 2, 3], 'b': [5, 6, 7]})
+
+        self.assertEqual(q1.sum(), (6, 18))
+        self.assertEqual(q1.sum('a'), 6)
+        self.assertEqual(q1.sum(lambda a, b, i: (a+b, i)), (24, 3))
     ## mean
     ## median
+    def test_median(self):
+        q1 = Qfrom({'a': [1, 2, 3], 'b': [5, 6, 7]})
+
+        self.assertEqual(q1.median(), (2, 6))
+        self.assertEqual(q1.median('a'), 2)
+        self.assertEqual(q1.median(lambda a, b, i: (a+b, i)), (8, 1))
     ## var
     ## len
     def test_len(self):

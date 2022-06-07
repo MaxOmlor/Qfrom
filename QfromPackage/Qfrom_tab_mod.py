@@ -1465,6 +1465,14 @@ class Qfrom():
             return first(q_result.table_dict.values()).sum()
         return tuple(col.sum() for col in q_result.table_dict.values())
 
+    def median(self, *args):
+        self.calculate()
+        q_result = self.select(*args) if len(args) > 0 else self
+        q_result.calculate()
+        if len(q_result.columns()) == 1:
+            return np.median(first(q_result.table_dict.values()))
+        return tuple(np.median(col) for col in q_result.table_dict.values())
+
     #-- special func --------------------------------------------#
     def calculate(self):
         if any(self.__operation_list):
