@@ -1454,8 +1454,8 @@ class Qfrom():
         q_result = self.select(*args) if len(args) > 0 else self
         q_result.calculate()
         if len(q_result.columns()) == 1:
-            return np.argmin(first(q_result.table_dict.values()))
-        return tuple(np.argmin(col) for col in q_result.table_dict.values())
+            return int(np.argmin(first(q_result.table_dict.values())))
+        return tuple(int(np.argmin(col)) for col in q_result.table_dict.values())
     
     def min_item(self, *args):
         self.calculate()
@@ -1480,8 +1480,8 @@ class Qfrom():
         q_result = self.select(*args) if len(args) > 0 else self
         q_result.calculate()
         if len(q_result.columns()) == 1:
-            return np.argmax(first(q_result.table_dict.values()))
-        return tuple(np.argmax(col) for col in q_result.table_dict.values())
+            return int(np.argmax(first(q_result.table_dict.values())))
+        return tuple(int(np.argmax(col)) for col in q_result.table_dict.values())
 
     def sum(self, *args):
         self.calculate()

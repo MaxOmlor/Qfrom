@@ -994,6 +994,7 @@ class TestQfromClass(unittest.TestCase):
 
         self.assertEqual(q1.min_id(), (0, 0))
         self.assertEqual(q1.min_id('a'), 0)
+        self.assertEqual(type(q1.min_id('a')), int)
         self.assertEqual(q1.min_id(lambda a, b, i: (a+b, i)), (0, 0))
     ## min_item
     def test_min_item(self):
@@ -1015,6 +1016,7 @@ class TestQfromClass(unittest.TestCase):
 
         self.assertEqual(q1.max_id(), (2, 2))
         self.assertEqual(q1.max_id('a'), 2)
+        self.assertEqual(type(q1.max_id('a')), int)
         self.assertEqual(q1.max_id(lambda a, b, i: (a+b, i)), (2, 2))
     ## max_item
     ## sum
