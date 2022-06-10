@@ -199,7 +199,7 @@ class TestQfromClass(unittest.TestCase):
     ## tolist
     ## (toset)
     ## todict
-    ## (toarray)
+    ## toarray
     ## (tomtx)
     ## todf
     ## tocsv
@@ -1091,18 +1091,27 @@ class TestQfromClass(unittest.TestCase):
 
     ## tolist
     def test_tolist(self):
-        q = Qfrom({'a': [1, 2, 3], 'b': [5, 6, 7]})
-        l = [(1, 5), (2, 6), (3, 7)]
+        q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+        l = [(1, 4), (2, 5), (3, 6)]
 
         self.assertEqual(q.tolist(), l)
     ## (toset)
     ## todict
     def test_todict(self):
-        d = {'a': np.array([1, 2, 3]), 'b': np.array([5, 6, 7])}
+        d = {'a': np.array([1, 2, 3]), 'b': np.array([4, 5, 6])}
         q = Qfrom(d)
 
         self.assertEqual(q.todict(), d)
-    ## (toarray)
+    ## toarray
+    def test_toarray(self):
+        q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+        a = np.array([
+            [1, 4],
+            [2, 5],
+            [3, 6],
+        ])
+
+        self.assertTrue(np.array_equal(q.toarray(), a))
     ## (tomtx)
     ## todf
     ## tocsv

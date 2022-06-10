@@ -1549,4 +1549,41 @@ class Qfrom():
     def todict(self):
         self.calculate()
         return self.table_dict
+    
+    def toarray(self) -> np.array:
+        self.calculate()
+
+        result = np.array(list(self.table_dict.values())[::-1])
+        result = np.rot90(result, 3)
+        return result
+
+    #-- plot func -----------------------------------------------#
+    '''def plot(self, x=None, show_legend=True, title=None, x_scale_log=False, y_scale_log=False, axis=None) -> None:
+        self.calculate()
+
+        ax = axis
+        if axis==None:
+            fig = plt.figure()
+            ax = fig.add_subplot(1,1,1)
+
+        if x is None:
+            x = self.columns()[0]
+        col_list = [col for col in self.columns() if col != x]
+
+        x_list = self[x]
+        ax.set_xlabel(x)
+        for c in col_list:
+            c_list = self.select(lambda item:item[c])()
+            ax.plot(x_list, c_list, label=c)
         
+        if x_scale_log:
+            ax.set_xscale('log')
+        if y_scale_log:
+            ax.set_yscale('log')
+        if show_legend:
+            ax.legend()
+        if title is not None:
+            ax.set_title(title)
+        
+        if axis== None:
+            plt.show()'''
