@@ -1104,14 +1104,16 @@ class TestQfromClass(unittest.TestCase):
         self.assertEqual(q.todict(), d)
     ## toarray
     def test_toarray(self):
-        q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
-        a = np.array([
+        q1 = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+        a1 = np.array([
             [1, 4],
             [2, 5],
             [3, 6],
         ])
+        a2 = np.array([1, 2, 3])
 
-        self.assertTrue(np.array_equal(q.toarray(), a))
+        self.assertTrue(np.array_equal(q1.toarray(), a1))
+        self.assertTrue(np.array_equal(q1['a'].toarray(), a2))
     ## (tomtx)
     ## todf
     ## tocsv

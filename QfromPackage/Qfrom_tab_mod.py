@@ -1553,6 +1553,11 @@ class Qfrom():
     def toarray(self) -> np.array:
         self.calculate()
 
+        if len(self.table_dict) == 0:
+            return np.empty()
+        if len(self.table_dict) == 1:
+            return first(self.table_dict.values())
+
         result = np.array(list(self.table_dict.values())[::-1])
         result = np.rot90(result, 3)
         return result
@@ -1570,10 +1575,10 @@ class Qfrom():
             x = self.columns()[0]
         col_list = [col for col in self.columns() if col != x]
 
-        x_list = self[x]
+        x_list = self[x].toarray()
         ax.set_xlabel(x)
         for c in col_list:
-            c_list = self.select(lambda item:item[c])()
+            c_list = self[c].toarray()
             ax.plot(x_list, c_list, label=c)
         
         if x_scale_log:
