@@ -89,13 +89,13 @@ def get_used_vars_from_func_str(predicate_str, keys):
     result = split_func_str_by_var(predicate_str)
     if len(result) > 1:
         word_list = result[1::2]
-        ops = [
+        py_keywords = [
             'and', 'or', 'not', 'in', 'is',
             'len', 'min', 'max', 'sum', 'mean', 'median', 
-            'print',
+            'print', 'type',
             'for', 'if', 'while'
         ]
-        word_list_no_bool_ops = [word for word in word_list if word not in ops]
+        word_list_no_bool_ops = [word for word in word_list if word not in py_keywords]
         word_list_no_values = [word for word in word_list_no_bool_ops if word not in ['None'] and re.search('^[0-9]+$', word) is None]
         filter_by_keys = [word for word in word_list_no_values if word in keys or re.search('^\w+$', word) is not None]
         
