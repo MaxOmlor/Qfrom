@@ -29,7 +29,6 @@ def split_func_str_by_var(func_str):
     str_part_list = []
     new_word = ''
     for c in func_str:
-        #print(c, re.search(var_pattern, c) is not None, re.search(escape_pattern, c) is not None)
         old_var_state = var_state
         var_state = re.search(var_pattern, c) is not None and not escape_state
         is_escape_char = re.search(escape_pattern, c) is not None
@@ -59,15 +58,12 @@ def split_func_str_coma(func_str):
 
     for c in func_str:
         if c in escape_start_to_id:
-            #print(f'{c} in escape_start_to_id')
             escape_stack.put(escape_start_to_id[c])
         if c in escape_end_to_id:
-            #print(f'{c} in escape_end_to_id')
             i = escape_end_to_id[c]
             top_item = escape_stack.get()
             if i != top_item:
                 escape_stack.put(top_item)
-        #print(f'{c=}, {escape_stack.empty()=}')
 
         if escape_stack.empty() and c == coma_pattern:
             str_part_list.append(new_word.strip())
@@ -162,7 +158,7 @@ def trans_select_func(func, keys):
         raise SyntaxError(str(func) + ' cant be interpreted as a function')
     if callable(func):
         return (None, None, None, func)
-    if type(func) in [str, tuple, list]:
+    if type(func) in [str, tuple, list, np.str_]:
         select_join_func_str, select_join_func_col_names, select_func_str = selectarg_to_funcstr(func, keys)
         #print(f'{func} -> {select_join_func_str}, {select_join_func_col_names}, {select_func_str}')
         return (eval(select_join_func_str) if select_join_func_str else None, select_join_func_col_names, eval(select_func_str), None)
@@ -511,7 +507,6 @@ def append_table_dict(table_dict, item):
         return {key:np.append(table_dict[key], [item[key]]) for key in table_dict.keys()}
     raise ValueError('item must be of type tuple or dict')
 def order_by_table_dict(table_dict, key_dict, reverse, select_func):
-    #print(f'{key_dict=}')
     ids = np.lexsort(list(key_dict.values())[::-1])
     result_dict = None
     if reverse:
@@ -553,7 +548,6 @@ def where_table_dict(table_dict, selected_col_names, func):
 def join_table_dict(table_dict, other, key_dict, join_left_outer=False, join_right_outer=False):
     if key_dict is None:
         key_dict = {key:key for key in set(table_dict.keys()) & set(other.keys())}
-    #print(f'{key_dict=}')
     
     table_dict_keys = table_dict[first(key_dict.keys())] if len(key_dict.keys()) == 1 else\
         [tuple(table_dict[key][i] for key in key_dict.keys()) for i in range(len(first(table_dict.values())))]
@@ -561,8 +555,6 @@ def join_table_dict(table_dict, other, key_dict, join_left_outer=False, join_rig
         [tuple(other[key][i] for key in key_dict.values()) for i in range(len(first(other.values())))]
     this_group_ids_dict = group_by_dict(table_dict_keys)
     other_group_ids_dict = group_by_dict(other_keys)
-    #print(f'{this_group_ids_dict=}')
-    #print(f'{other_group_ids_dict=}')
 
     none_id_table_dict = len(table_dict_keys)
     none_id_other = len(other_keys)
@@ -609,23 +601,18 @@ def join_id_table_dict(table_dict, other, join_left_outer=False, join_right_oute
     len_table_dict = len(first(table_dict.values()))
     len_other = len(first(other.values()))
     if len_table_dict == len_other:
-        #print('same len')
         return {**table_dict, **other}
     elif join_left_outer and len_table_dict > len_other:
-        #print('join_left_outer and len_table_dict > len_other')
         dif = len_table_dict - len_other
         none_list = np.full(dif, None)
         return {**table_dict, **{key:np.append(col, none_list) for key, col in other.items()}}
     elif join_right_outer and len_table_dict < len_other:
-        #print('join_right_outer and len_table_dict < len_other')
         dif = len_other - len_table_dict
         none_list = np.full(dif, None)
         return {**{key:np.append(col, none_list) for key, col in table_dict.items()}, **other}
     elif len_table_dict > len_other:
-        #print('len_table_dict > len_other')
         return {**{key:col[0:len_other] for key, col in table_dict.items()}, **other}
     else:
-        #print('len_table_dict < len_other')
         return {**table_dict, **{key:col[0:len_table_dict] for key, col in other.items()}}
 def concat_table_dict(table_dict, other, join_outer_left, join_outer_right):
     if join_outer_left and join_outer_right:
@@ -666,7 +653,6 @@ def concat_table_dict(table_dict, other, join_outer_left, join_outer_right):
         return {key:np.append(table_dict[key], other[key]) for key in set(table_dict.keys()) & set(other.keys())}
 def group_by_table_dict(table_dict, key_array, select_func):
     group_ids_dict = group_by_dict(key_array)
-    #print(f'{group_ids_dict=}')
 
     group_array = np.empty(len(group_ids_dict), dtype=object)
     if select_func is None:
@@ -749,10 +735,8 @@ def calc_operations(table_dict, operation_list):
                 else:
                     if select_join_func:
                         key_dict = {**result_dict, **map_table_dict(result_dict, selected_col_names, select_join_func, pass_none, select_join_func_col_names)}
-                        #print(f'joined_{key_dict=}')
                     key_dict = select_key_func(key_dict)
                 result_dict = order_by_table_dict(result_dict, key_dict, reverse, select_func)
-                #print(f'{result_dict=}')
                 continue
             case Operation.WHERE:
                 if len(result_dict) == 0:
@@ -846,9 +830,7 @@ def calc_operations(table_dict, operation_list):
                         key_dict = {**result_dict, **map_table_dict(result_dict, selected_col_names, select_join_func, pass_none, select_join_func_col_names)}
                     key_dict = select_key_func(key_dict)
                 key_list = list(iter_table_dict(key_dict))
-                #print(f'{key_list=}')
                 result_dict = group_by_table_dict(result_dict, key_list, select_func)
-                #print(f'{result_dict=}')
                 continue
             case Operation.FLATTEN:
                 if len(result_dict) == 0:
@@ -869,9 +851,7 @@ def calc_operations(table_dict, operation_list):
                         key_dict = {**result_dict, **map_table_dict(result_dict, selected_col_names, select_join_func, pass_none, select_join_func_col_names)}
                     key_dict = select_key_func(key_dict)
                 key_list = list(iter_table_dict(key_dict))
-                #print(f'{key_list=}')
                 result_dict = flatten_table_dict(key_list, new_col_names)
-                #print(f'{result_dict=}')
                 continue
             case Operation.FLATTENJOIN:
                 if len(result_dict) == 0:
@@ -892,9 +872,7 @@ def calc_operations(table_dict, operation_list):
                         key_dict = {**result_dict, **map_table_dict(result_dict, selected_col_names, select_join_func, pass_none, select_join_func_col_names)}
                     key_dict = select_key_func(key_dict)
                 key_list = list(iter_table_dict(key_dict))
-                #print(f'{key_list=}')
                 result_dict = flattenjoin_table_dict(result_dict, key_list, new_col_names)
-                #print(f'{result_dict=}')
                 continue
     
     return result_dict
@@ -939,9 +917,6 @@ class Qfrom():
             else:
                 first_item = first(collection)
                 if type(collection[first_item]) is not np.ndarray:
-                    #print(f'{collection=}')
-                    #print('collection.values()='+str([value for key, value in collection.items()]))
-                    #print('type(collection[first_item])='+str(type(collection[first_item])))
                     self.table_dict = {key:np.array(value) for key, value in collection.items()}
                 else:
                     self.table_dict = collection
@@ -1055,7 +1030,6 @@ class Qfrom():
 
     def __str__(self) -> str:
         self.calculate()
-        #print(f'{self.table_dict=}')
         
         if self.any() and len(self.columns()) == 1:
             return 'Qfrom\n'+\
@@ -1372,9 +1346,7 @@ class Qfrom():
         var_names = map_func.__code__.co_varnames
         if selected_col_names:
             var_names = selected_col_names
-        #print(f'{var_names=}')
         args = tuple(self.table_dict[var] for var in var_names)
-        #print(f'{args=}')
 
         return map_func(*args)
         
@@ -1393,12 +1365,9 @@ class Qfrom():
         var_names = map_func.__code__.co_varnames
         if selected_col_names:
             var_names = selected_col_names
-        #print(f'{var_names=}')
 
         q_args = self[var_names]
-        #print(f'{q_args=}')
         agg = q_args[0]
-        #print(f'{agg=}')
 
         if len(var_names) > 1:
             for item in q_args[1:]:
@@ -1563,7 +1532,7 @@ class Qfrom():
         return result
 
     #-- plot func -----------------------------------------------#
-    '''def plot(self, x=None, show_legend=True, title=None, x_scale_log=False, y_scale_log=False, axis=None) -> None:
+    def plot(self, x=None, show_legend=True, title=None, x_scale_log=False, y_scale_log=False, axis=None, order_by_x=True) -> None:
         self.calculate()
 
         ax = axis
@@ -1573,12 +1542,15 @@ class Qfrom():
 
         if x is None:
             x = self.columns()[0]
-        col_list = [col for col in self.columns() if col != x]
+        
+        q_data = self.orderby(x) if order_by_x else self
+        q_data.calculate()
+        col_list = [col for col in q_data.columns() if col != x]
 
-        x_list = self[x].toarray()
+        x_list = q_data[x].toarray()
         ax.set_xlabel(x)
         for c in col_list:
-            c_list = self[c].toarray()
+            c_list = q_data[c].toarray()
             ax.plot(x_list, c_list, label=c)
         
         if x_scale_log:
@@ -1590,5 +1562,5 @@ class Qfrom():
         if title is not None:
             ax.set_title(title)
         
-        if axis== None:
-            plt.show()'''
+        if axis == None:
+            plt.show()
