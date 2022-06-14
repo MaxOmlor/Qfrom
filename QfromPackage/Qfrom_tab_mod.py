@@ -1537,7 +1537,10 @@ class Qfrom():
 
         ax = axis
         if axis==None:
-            fig = plt.figure(figsize=figsize) if figsize else plt.figure()
+            fig = plt.figure()
+            if figsize:
+                fig.set_figwidth(figsize[0])
+                fig.set_figheight(figsize[1])
             ax = fig.add_subplot(1,1,1)
 
         if x is None:
