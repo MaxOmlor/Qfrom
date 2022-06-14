@@ -1532,12 +1532,12 @@ class Qfrom():
         return result
 
     #-- plot func -----------------------------------------------#
-    def plot(self, x=None, show_legend=True, title=None, x_scale_log=False, y_scale_log=False, axis=None, order_by_x=True) -> None:
+    def plot(self, x=None, show_legend=True, title=None, x_scale_log=False, y_scale_log=False, axis=None, figsize=None, order_by_x=True) -> None:
         self.calculate()
 
         ax = axis
         if axis==None:
-            fig = plt.figure()
+            fig = plt.figure(figsize=figsize) if figsize else plt.figure()
             ax = fig.add_subplot(1,1,1)
 
         if x is None:
