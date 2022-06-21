@@ -991,6 +991,9 @@ class Qfrom():
         if type(columns) is str:
             columns = tuple(col.strip() for col in columns.split(','))
         if type(columns) in [tuple, list]:
+            if len(columns) == 2 and type(columns[0]) is str and type(columns[1]) is int:
+                self.table_dict[columns[0]][columns[1]] = newvalue
+                return
             newvaluedict = newvalue
             if type(newvaluedict) is list:
                 if len(columns) == 1:

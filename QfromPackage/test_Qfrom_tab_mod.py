@@ -122,6 +122,7 @@ class TestQfromClass(unittest.TestCase):
 
     ## append
     ## setitem
+    ## setitem_col_id
     ## getitem
     ## contains
     ## iter
@@ -346,6 +347,15 @@ class TestQfromClass(unittest.TestCase):
         self.assertEqual(q3_2, q_result3)
         #self.assertEqual(q3_3, q_result3)
         self.assertEqual(q3_4, q_result3)
+    ## setitem_col_id
+    def test_setitem_col_id(self):
+        q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+        q_result1 = Qfrom({'a': [10, 2, 3], 'b': [4, 5, 6]})
+
+        q1_1 = q.copy()
+        q1_1['a', 0] = 10
+        
+        self.assertEqual(q1_1, q_result1)
     #def test_setitem_errors(self):
         # set to short/to long list
     ## getitem
