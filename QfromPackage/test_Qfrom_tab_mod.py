@@ -354,7 +354,7 @@ class TestQfromClass(unittest.TestCase):
 
         q1_1 = q.copy()
         q1_1['a', 0] = 10
-        
+
         self.assertEqual(q1_1, q_result1)
     #def test_setitem_errors(self):
         # set to short/to long list
@@ -370,6 +370,7 @@ class TestQfromClass(unittest.TestCase):
         q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
         self.assertEqual(q[1], (2, 5))
         self.assertEqual(q[1:], Qfrom({'a': [2, 3], 'b': [5, 6]}))
+        self.assertEqual(q['a', 0], 1)
     '''def test_getitem_col(self):
         q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
 

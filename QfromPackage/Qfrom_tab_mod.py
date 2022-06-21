@@ -961,6 +961,9 @@ class Qfrom():
                 result = {col_name: col[key] for col_name, col in self.table_dict.items()}
                 return Qfrom(result)
         
+            if type(key) is tuple and len(key) == 2 and type(key[0]) is str and type(key[1]) is int:
+                return self.table_dict[key[0]][key[1]]
+        
         return self.select(*args)
         '''columns = key
         if type(key) is str:
