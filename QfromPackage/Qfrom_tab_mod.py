@@ -525,7 +525,9 @@ def map_table_dict(table_dict, selected_col_names, func, do_pass_none, out_col_n
             np.frompyfunc(func, len(args), output_col_count)
 
     result_array = func(*args)
-
+    
+    #print(f'{result_array}')
+    #print(f'{out_col_names=}, {output_col_count=}')
     if out_col_names and output_col_count == len(out_col_names):
         if output_col_count == 1:
             return {out_col_names[0]:result_array}
@@ -533,6 +535,8 @@ def map_table_dict(table_dict, selected_col_names, func, do_pass_none, out_col_n
     elif out_col_names and output_col_count > len(out_col_names) and len(out_col_names) == 1:
         return {out_col_names[0]:result_array}
 
+    if output_col_count == 1 and len(result_array) > 0 and type(first(result_array)) is dict:
+        return {key:np.array([row[key] for row in result_array]) for key in first(result_array).keys()}
     if output_col_count == 1:
         return {0:result_array}
     return {i:col for i, col in enumerate(result_array)}
@@ -1053,6 +1057,7 @@ class Qfrom():
         #return 'Qfrom(' + str(self.table_dict) + ')'
 
     def __repr__(self) -> str:
+        #return 'Qfrom(' + str(self.table_dict) + ')'
         return str(self)
     
     def __eq__(self, other) -> bool:

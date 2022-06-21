@@ -576,6 +576,7 @@ class TestQfromClass(unittest.TestCase):
         q_result4 = Qfrom({0: [0, 1, 2]})
         q_result5 = Qfrom({0: [0, 1, 2], 1: [1, 2, 3], 2: [4, 5, 6]})
         q_result6 = Qfrom({'i': [0, 1, 2], 'a': [1, 2, 3], 'b': [4, 5, 6]})
+        q_result7 = Qfrom({'a1': [1, 2, 3], 'a2': [2, 3, 4]})
 
         self.assertEqual(q.select(lambda a,b: a+b), q_result1)
         self.assertEqual(q.select('a, b', lambda x,y: x+y), q_result1)
@@ -587,6 +588,7 @@ class TestQfromClass(unittest.TestCase):
         self.assertEqual(q.select(lambda i,a,b: (i,a,b)), q_result5)
         self.assertEqual(q.select(lambda i,a,b: (i,a,b), ('i', 'a', 'b')), q_result6)
         self.assertEqual(q.select(lambda i,a,b: (i,a,b), 'i, a, b'), q_result6)
+        self.assertEqual(q.select(lambda a: {'a1':a, 'a2':a+1}), q_result7)
     ## select_pn -> pass None values
     def test_select_pn(self):
         q = Qfrom({'a': [1, None, 3], 'b': [4, 5, 6]})
