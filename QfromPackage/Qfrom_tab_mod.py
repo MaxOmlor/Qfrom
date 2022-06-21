@@ -536,15 +536,19 @@ def map_table_dict(table_dict, selected_col_names, func, do_pass_none, out_col_n
     if output_col_count == 1:
         return {0:result_array}
     return {i:col for i, col in enumerate(result_array)}
-def where_table_dict(table_dict, selected_col_names, func):
+def where_table_dict(table_dict, selected_col_names, func):#, invert):
     args = tuple(table_dict[col] for col in selected_col_names) if selected_col_names else get_func_args(table_dict, func)
     output_col_count = get_func_output_col_count(table_dict, func)
     if output_col_count != 1:
         raise ValueError('predicate must return one bool not a tuple')
+    #if invert:
+    #    func = np.frompyfunc(lambda *t: not func(*t), len(args), output_col_count)
+    #else:
     func = np.frompyfunc(func, len(args), output_col_count)
     where_filter = func(*args)
     where_filter = where_filter.astype('bool')
-    return {col_name:col[where_filter] for col_name, col in table_dict.items()}
+    result = {col_name:col[where_filter] for col_name, col in table_dict.items()}
+    return result
 def join_table_dict(table_dict, other, key_dict, join_left_outer=False, join_right_outer=False):
     if key_dict is None:
         key_dict = {key:key for key in set(table_dict.keys()) & set(other.keys())}
@@ -743,7 +747,8 @@ def calc_operations(table_dict, operation_list):
                     continue
                 selected_col_names = op['selected_col_names']
                 func = op['func']
-                result_dict = where_table_dict(result_dict, selected_col_names, func)
+                #invert = op['invert']
+                result_dict = where_table_dict(result_dict, selected_col_names, func)#, invert)
                 continue
             case Operation.SELECT:
                 if len(result_dict) == 0:
@@ -1147,11 +1152,38 @@ class Qfrom():
         operation = {
             'Operation': Operation.WHERE,
             'selected_col_names': selected_col_names,
-            'func': where_predicate
+            'func': where_predicate,
+            #'invert': False,
         }
         return Qfrom(
             self.table_dict,
             operation_list=self.__operation_list+[operation])
+
+    '''def split(self, *args):
+        selected_col_names, where_predicate = trans_predicate_func_args(args, keys=self.columns())
+
+        operation1 = {
+            'Operation': Operation.WHERE,
+            'selected_col_names': selected_col_names,
+            'func': where_predicate,
+            'invert': False,
+        }
+        operation2 = {
+            'Operation': Operation.WHERE,
+            'selected_col_names': selected_col_names,
+            'func': where_predicate,
+            'invert': True,
+        }
+        result = (
+            Qfrom(
+                self.table_dict,
+                operation_list=self.__operation_list+[operation1]),
+            Qfrom(
+                self.table_dict,
+                operation_list=self.__operation_list+[operation2]),
+        )
+        print(result)
+        return result'''
 
     def select(self, *args, pass_none=False):
         selected_col_names,\
@@ -1201,6 +1233,11 @@ class Qfrom():
             operation_list=self.__operation_list+[operation])
     def select_join_pn(self, *args):
         return self.select_join(*args, pass_none=True)
+
+    def shuffle(self):
+        self.calculate()
+        dict_shuffled = {key: np.random.shuffle(np.copy(col)) for key, col in self.table_dict}
+        return Qfrom(dict_shuffled)
 
     def join(self, other, key_dict=None, join_outer_left=False, join_outer_right=False):
         operation = {
