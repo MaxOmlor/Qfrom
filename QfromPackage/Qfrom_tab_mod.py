@@ -922,14 +922,15 @@ class Qfrom():
             collection.calculate()
             self.table_dict = {key:np.copy(value) for key, value in collection.table_dict.items()}
         elif isinstance(collection, Iterable):
-            if len(collection) > 0:
-                first_item = first(collection)
+            collection_list = list(collection)
+            if len(collection_list) > 0:
+                first_item = first(collection_list)
                 if isinstance(first_item, dict):
-                    self.table_dict = {key:np.array([item[key] for item in collection]) for key in first_item.keys()}
+                    self.table_dict = {key:np.array([item[key] for item in collection_list]) for key in first_item.keys()}
                 elif isinstance(first_item, tuple):
-                    self.table_dict = {i:np.array([item[i] for item in collection]) for i in range(len(first_item))}
+                    self.table_dict = {i:np.array([item[i] for item in collection_list]) for i in range(len(first_item))}
                 else:
-                    self.table_dict = {0:np.array(collection)}
+                    self.table_dict = {0:np.array(collection_list)}
         
         self.__operation_list = operation_list
 

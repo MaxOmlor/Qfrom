@@ -114,6 +114,7 @@ class TestQfromClass(unittest.TestCase):
     ## import_dataframe
     ## import_csv
     ## (import_json)
+    ## import_generator
 
     ## eq
     ## str
@@ -244,6 +245,16 @@ class TestQfromClass(unittest.TestCase):
     ## import_dataframe
     ## import_csv
     ## (import_json)
+    ## import_generator
+    def test_init_generator(self):
+        g1 = ({'a': i} for i in range(3))
+        g2 = ((i,) for i in range(3))
+
+        q_result1 = Qfrom({'a': [0, 1, 2]})
+        q_result2 = Qfrom({0: [0, 1, 2]})
+
+        self.assertEqual(Qfrom(g1), q_result1)
+        self.assertEqual(Qfrom(g2), q_result2)
     
     ## eq
     def test_eq(self):
