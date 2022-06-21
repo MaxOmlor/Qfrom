@@ -136,6 +136,7 @@ class TestQfromClass(unittest.TestCase):
     ## (deep_copy)
 
     ## where
+    ## split
     ## select
     ## select_pn -> pass None values
     ## select_join -> map-op which gets joined directly
@@ -494,6 +495,23 @@ class TestQfromClass(unittest.TestCase):
         self.assertEqual(q2.where(lambda a, b: a and b), q_result4)
         self.assertEqual(q3.where('a, b or c'), q_result5)
         self.assertEqual(q3.where(('a', 'b or c')), q_result5)
+    ## split
+    '''def test_split(self):
+        q1 = Qfrom({'a': [1, 2, 3, 4, 5], 'b': [5, 4, 3, 2, 1]})
+
+        q_result1 = (
+            Qfrom({'a': [1, 2, 3], 'b': [5, 4, 3]}),
+            Qfrom({'a': [4, 5], 'b': [2, 1]}),
+        )
+        q_result2 = (
+            Qfrom({'a': [1, 3, 5], 'b': [5, 3, 1]}),
+            Qfrom({'a': [2, 4], 'b': [4, 2]}),
+        )
+
+        self.assertEqual(q1.split('a <= 3'), q_result1)
+        #self.assertEqual(q1.split(lambda a: a <= 3), q_result1)
+        #self.assertEqual(q1.split('i%2'), q_result2)'''
+
     ## select
     def test_select(self):
         q1 = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6], 'c': [7, 8, 9]})
