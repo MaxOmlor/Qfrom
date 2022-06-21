@@ -1153,6 +1153,16 @@ class TestQfromClass(unittest.TestCase):
     ## (tomtx)
     ## todf
     ## tocsv
+    def test_tocsv(self):
+        q1 = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+
+        s1 = 'a,b\n1,4\n2,5\n3,6'
+        s2 = 'a\tb\n1\t4\n2\t5\n3\t6'
+        s3 = '1,4\n2,5\n3,6'
+
+        self.assertEqual(q1.tocsv(), s1)
+        self.assertEqual(q1.tocsv('\t'), s2)
+        self.assertEqual(q1.tocsv(header=False), s3)
     ## (tocsvfile)
     ## (tojson)
     ## (tojsonfile)

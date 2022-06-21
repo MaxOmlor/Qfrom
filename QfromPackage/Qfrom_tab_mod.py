@@ -1572,6 +1572,18 @@ class Qfrom():
         result = np.rot90(result, 3)
         return result
 
+    def tocsv(self, delimiter=',', header=True) -> str:
+        self.calculate()
+        if len(self) == 0:
+            return ''
+        
+        header_str = delimiter.join([str(key) for key in self.columns()])
+        data = [delimiter.join([str(item) for item in row]) for row in self]
+        data_str = '\n'.join(data)
+
+        return f'{header_str}\n{data_str}' if header else data_str
+
+
     #-- plot func -----------------------------------------------#
     def plot(self, x=None, show_legend=True, title=None, x_scale_log=False, y_scale_log=False, axis=None, figsize=None, order_by_x=True) -> None:
         self.calculate()
