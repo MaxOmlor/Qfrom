@@ -217,20 +217,27 @@ class TestQfromClass(unittest.TestCase):
     def test_init_list(self):
         self.assertEqual(Qfrom([1, 2, 3]).tolist(), [1, 2, 3])
 
-        l = [
+        l1 = [
             (1, 4),
             (2, 5),
             (3, 6),
             ]
-        q_result = Qfrom({0: [1, 2, 3], 1: [4, 5, 6]})
+        l2 = [
+            {'a': 1, 'b': 4},
+            {'a': 2, 'b': 5},
+            {'a': 3, 'b': 6},
+            ]
+        q_result1 = Qfrom({0: [1, 2, 3], 1: [4, 5, 6]})
+        q_result2 = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
 
-        self.assertEqual(Qfrom(l), q_result)
-        self.assertEqual(Qfrom(l).tolist(), l)
+        self.assertEqual(Qfrom(l1), q_result1)
+        self.assertEqual(Qfrom(l1).tolist(), l1)
+        self.assertEqual(Qfrom(l2), q_result2)
     ## import_dict
-    '''def test_init_dict(self):
+    def test_init_dict(self):
         d = {'a': [1, 2, 3], 'b': [4, 5, 6]}
 
-        self.assertEqual(Qfrom(d).todict(), d)'''
+        self.assertEqual({key:list(col) for key,col in Qfrom(d).todict().items()}, d)
     ## (import_set)
     ## (import_array)
     ## (import_mtx)

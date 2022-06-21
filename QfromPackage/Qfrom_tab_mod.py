@@ -907,16 +907,9 @@ class Qfrom():
         #else:
         #    self.table_dict =  parse_iterables_to_arrays(table_dict)
         self.table_dict = dict()
-        if type(collection) is str:
+        if isinstance(collection, str):
             self.table_dict =  parse_iterables_to_arrays(parse_str_to_collection(collection))
-        if type(collection) is list:
-            if len(collection) > 0:
-                first_item = collection[0]
-                if type(first_item) is tuple:
-                    self.table_dict = {i:np.array([item[i] for item in collection]) for i in range(len(first_item))}
-                else:
-                    self.table_dict = {0:np.array(collection)}
-        if type(collection) is dict:
+        elif isinstance(collection, dict):
             if len(collection) == 0:
                 self.table_dict = collection
             else:
@@ -925,9 +918,19 @@ class Qfrom():
                     self.table_dict = {key:np.array(value) for key, value in collection.items()}
                 else:
                     self.table_dict = collection
-        if type(collection) is Qfrom:
+        elif isinstance(collection, Qfrom):
             collection.calculate()
             self.table_dict = {key:np.copy(value) for key, value in collection.table_dict.items()}
+        elif isinstance(collection, Iterable):
+            if len(collection) > 0:
+                first_item = first(collection)
+                if isinstance(first_item, dict):
+                    self.table_dict = {key:np.array([item[key] for item in collection]) for key in first_item.keys()}
+                elif isinstance(first_item, tuple):
+                    self.table_dict = {i:np.array([item[i] for item in collection]) for i in range(len(first_item))}
+                else:
+                    self.table_dict = {0:np.array(collection)}
+        
         self.__operation_list = operation_list
 
     #-- standart list func --------------------------------------#
@@ -1236,7 +1239,7 @@ class Qfrom():
 
     def shuffle(self):
         self.calculate()
-        dict_shuffled = {key: np.random.shuffle(np.copy(col)) for key, col in self.table_dict}
+        dict_shuffled = {key: np.random.shuffle(np.copy(col)) for key, col in self.table_dict.items()}
         return Qfrom(dict_shuffled)
 
     def join(self, other, key_dict=None, join_outer_left=False, join_outer_right=False):
