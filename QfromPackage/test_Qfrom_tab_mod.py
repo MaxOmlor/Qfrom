@@ -349,13 +349,23 @@ class TestQfromClass(unittest.TestCase):
         self.assertEqual(q3_4, q_result3)
     ## setitem_col_id
     def test_setitem_col_id(self):
-        q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
-        q_result1 = Qfrom({'a': [10, 2, 3], 'b': [4, 5, 6]})
+        q1 = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+        q2 = Qfrom({'a': ['a', 'b', 'c'], 'b': ['aa', 'bb', 'cc']})
+        q1_result1 = Qfrom({'a': [10, 2, 3], 'b': [4, 5, 6]})
+        q2_result1 = Qfrom({'a': ['aa', 'b', 'c'], 'b': ['aa', 'bb', 'cc']})
+        q2_result2 = Qfrom({'a': ['a', 'b', 'c'], 'b': ['aa', 'bb', 'c']})
 
-        q1_1 = q.copy()
+        q1_1 = q1.copy()
         q1_1['a', 0] = 10
 
-        self.assertEqual(q1_1, q_result1)
+        q2_1 = q2.copy()
+        q2_1['a', 0] = 'aa'
+        q2_2 = q2.copy()
+        q2_2['b', 2] = 'c'
+
+        self.assertEqual(q1_1, q1_result1)
+        self.assertEqual(q2_1, q2_result1)
+        self.assertEqual(q2_2, q2_result2)
     #def test_setitem_errors(self):
         # set to short/to long list
     ## getitem
@@ -371,6 +381,7 @@ class TestQfromClass(unittest.TestCase):
         self.assertEqual(q[1], (2, 5))
         self.assertEqual(q[1:], Qfrom({'a': [2, 3], 'b': [5, 6]}))
         self.assertEqual(q['a', 0], 1)
+        #self.assertEqual(q[lambda a,i: (i,a), 'i,a'], Qfrom({'i':[0,1,2], 'a':[1,2,3]}))
     '''def test_getitem_col(self):
         q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
 

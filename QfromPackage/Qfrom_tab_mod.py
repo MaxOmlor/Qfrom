@@ -463,6 +463,15 @@ def iter_table_dict(table_dict):
         for i in range(len(first(table_dict.values())))\
     )
 
+def arr_set_value(arr: np.array, key: int, value):
+    value_type = np.array([value]).dtype
+    if arr.dtype < value_type:
+        arr = arr.astype(value_type) 
+    arr[key] = value
+    return arr
+
+
+
 
 def get_func_output_col_count(table_dict, func, do_pass_none=False):
     #if not list(table_dict.values())[0].any():
@@ -949,6 +958,7 @@ class Qfrom():
         return len(self)
 
     def __getitem__(self, *args):
+        #print(f'__getitem__() -> {self.table_dict=}, {self.__operation_list=}, {args=}')
         if any(self.__operation_list):
             self.calculate()
         
@@ -964,15 +974,10 @@ class Qfrom():
             if type(key) is tuple and len(key) == 2 and type(key[0]) is str and type(key[1]) is int:
                 return self.table_dict[key[0]][key[1]]
         
+        #if len(args[0]) > 0:
+        #    return self.select(*args[0])
+        #print(f'{args=}')
         return self.select(*args)
-        '''columns = key
-        if type(key) is str:
-            columns = tuple(col.strip() for col in columns.split(','))
-        if type(columns) in [tuple, list]:
-            if len(columns) == 1:
-                return self.table_dict[columns[0]]
-            else:
-                return self.select(columns)'''
     
     def __setitem__(self, key, newvalue):
         if any(self.__operation_list):
@@ -981,11 +986,11 @@ class Qfrom():
         if type(key) is int:
             if type(newvalue) is tuple:
                 for i, k in enumerate(self.table_dict.keys()):
-                    self.table_dict[k][key] = newvalue[i]
+                    self.table_dict[k] = arr_set_value(self.table_dict[k], key, newvalue[i])
                 return
             if type(newvalue) is dict:
                 for k, v in newvalue.items():
-                    self.table_dict[k][key] = newvalue[k]
+                    self.table_dict[k] = arr_set_value(self.table_dict[k], key, v)
                 return
 
             raise ValueError('if key is of type int, newvalue must be of type tuple or dict')
@@ -995,7 +1000,7 @@ class Qfrom():
             columns = tuple(col.strip() for col in columns.split(','))
         if type(columns) in [tuple, list]:
             if len(columns) == 2 and type(columns[0]) is str and type(columns[1]) is int:
-                self.table_dict[columns[0]][columns[1]] = newvalue
+                self.table_dict[columns[0]] = arr_set_value(self.table_dict[columns[0]], columns[1], newvalue)
                 return
             newvaluedict = newvalue
             if type(newvaluedict) is list:
@@ -1201,6 +1206,7 @@ class Qfrom():
         return result'''
 
     def select(self, *args, pass_none=False):
+        #print(f'select() -> {args=}, {pass_none=}')
         selected_col_names,\
         map_func,\
         new_col_names,\
@@ -1549,6 +1555,7 @@ class Qfrom():
     #-- special func --------------------------------------------#
     def calculate(self):
         if any(self.__operation_list):
+            #print(f'calculate() -> {self.__operation_list=}')
             self.table_dict = calc_operations(dict(self.table_dict), self.__operation_list)
             self.__operation_list = []
         return self.table_dict
