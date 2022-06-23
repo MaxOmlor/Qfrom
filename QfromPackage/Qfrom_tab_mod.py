@@ -535,14 +535,24 @@ def order_by_table_dict(table_dict, key_dict, reverse, select_func):
         result_dict = select_func(result_dict)
     return result_dict
 def map_table_dict(table_dict, selected_col_names, func, do_pass_none, out_col_names=None):
+    if not any(table_dict):
+        return table_dict
+    
     args = tuple(table_dict[col] for col in selected_col_names) if selected_col_names else get_func_args(table_dict, func)
+    #print(f'{args=}')
     output_col_count = get_func_output_col_count(table_dict, func, do_pass_none)
-    func = np.frompyfunc(pass_none(func), len(args), output_col_count)\
-        if do_pass_none\
-        else\
-            np.frompyfunc(func, len(args), output_col_count)
 
-    result_array = func(*args)
+    result_array = None
+    if len(args) > 0 and do_pass_none:
+        func_vec = np.frompyfunc(pass_none(func), len(args), output_col_count)
+        result_array = func_vec(*args)
+    elif len(args) > 0:
+        func_vec = np.frompyfunc(func, len(args), output_col_count)
+        result_array = func_vec(*args)
+    else:
+        func_vec = np.frompyfunc(lambda x: func(), 1, output_col_count)
+        result_array = func_vec(first(table_dict.values()))
+
     
     if out_col_names and output_col_count == len(out_col_names):
         if output_col_count == 1:
