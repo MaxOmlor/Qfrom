@@ -525,7 +525,7 @@ class TestQfromClass(unittest.TestCase):
     def test_to_csv_file(self):
         output_path = 'test csv export.csv'
         Qfrom(test_data_set).to_csv_file(output_path)
-        result = Qfrom('test csv export.csv').to_list()
+        result = Qfrom(output_path).to_list()
         self.assertEqual(result, test_data_set)
     # to_json_file(self):
     # calculate(self):
