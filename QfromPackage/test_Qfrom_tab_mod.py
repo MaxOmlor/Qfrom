@@ -351,9 +351,12 @@ class TestQfromClass(unittest.TestCase):
     def test_setitem_col_id(self):
         q1 = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
         q2 = Qfrom({'a': ['a', 'b', 'c'], 'b': ['aa', 'bb', 'cc']})
+        q3 = Qfrom({'a': ['', '', ''], 'b': ['aa', 'bb', 'cc']})
         q1_result1 = Qfrom({'a': [10, 2, 3], 'b': [4, 5, 6]})
         q2_result1 = Qfrom({'a': ['aa', 'b', 'c'], 'b': ['aa', 'bb', 'cc']})
         q2_result2 = Qfrom({'a': ['a', 'b', 'c'], 'b': ['aa', 'bb', 'c']})
+        q2_result3 = Qfrom({'a': ['', 'b', 'c'], 'b': ['aa', 'bb', 'cc']})
+        q3_result1 = Qfrom({'a': ['a', '', ''], 'b': ['aa', 'bb', 'cc']})
 
         q1_1 = q1.copy()
         q1_1['a', 0] = 10
@@ -362,10 +365,17 @@ class TestQfromClass(unittest.TestCase):
         q2_1['a', 0] = 'aa'
         q2_2 = q2.copy()
         q2_2['b', 2] = 'c'
+        q2_3 = q2.copy()
+        q2_3['a', 0] = ''
+
+        q3_1 = q3.copy()
+        q3_1['a', 0] = 'a'
 
         self.assertEqual(q1_1, q1_result1)
         self.assertEqual(q2_1, q2_result1)
         self.assertEqual(q2_2, q2_result2)
+        self.assertEqual(q2_3, q2_result3)
+        self.assertEqual(q3_1, q3_result1)
     #def test_setitem_errors(self):
         # set to short/to long list
     ## getitem
@@ -628,6 +638,7 @@ class TestQfromClass(unittest.TestCase):
         q_result3 = Qfrom({'b': [4, 5, 6], 'a': [7, 8, 9]})
         q_result4 = Qfrom({'b': [4, 5, 6], 'a': [7, 8, 9], 'i':[0, 1, 2]})
         q_result5 = Qfrom({'b': [4, 5, 6], 'a': [False, True, True]})
+        q_result6 = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6], 'x':['', '', '']})
 
         self.assertEqual(q.select_join(lambda i: i), q_result1)
         self.assertEqual(q.select_join(lambda i: i, ('i',)), q_result2)
@@ -641,6 +652,7 @@ class TestQfromClass(unittest.TestCase):
         self.assertEqual(q.select_join(lambda a, i: (a+6, i), ('a', 'i')), q_result4)
         self.assertEqual(q.select_join(lambda a, i: (a+6, i), 'a, i'), q_result4)
         self.assertEqual(q.select_join('a>1 as a'), q_result5)
+        #self.assertEqual(q.select_join(lambda: '', 'x'), q_result6)
     ## select_join_pn
     def test_select_join_pn(self):
         q1 = Qfrom({'a': [None, 2, 3], 'b': [4, 5, 6]})

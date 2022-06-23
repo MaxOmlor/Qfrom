@@ -448,7 +448,16 @@ def first(iterable, predicate_func=None):
         return None
     return next(iter(iterable))
 def list_to_array(l):
-    a = np.empty(len(l), dtype=object)
+    list_type = None
+    if len(l) > 0 and isinstance(l[0], Qfrom):
+        list_type = object
+    elif len(l) > 0 and isinstance(l[0], list):
+        list_type = object
+    elif len(l) > 0:
+        list_type = np.array([l[0]]).dtype
+    else:
+        list_type = object
+    a = np.empty(len(l), dtype=list_type)
     
     for i, item in enumerate(l):
         a[i] = item
@@ -535,8 +544,6 @@ def map_table_dict(table_dict, selected_col_names, func, do_pass_none, out_col_n
 
     result_array = func(*args)
     
-    #print(f'{result_array}')
-    #print(f'{out_col_names=}, {output_col_count=}')
     if out_col_names and output_col_count == len(out_col_names):
         if output_col_count == 1:
             return {out_col_names[0]:result_array}
