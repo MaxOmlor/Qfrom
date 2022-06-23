@@ -1203,6 +1203,16 @@ class TestQfromClass(unittest.TestCase):
         self.assertEqual(q1.tocsv('\t'), s2)
         self.assertEqual(q1.tocsv(header=False), s3)
     ## (tocsvfile)
+    def test_tocsvfile(self):
+        output_path = 'test csv export.csv'
+        q1 = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+        q2 = Qfrom({'a': ['a', 'b', 'c'], 'b': ['a,a', 'b,b', 'c,c']})
+        
+        q1.tocsvfile(output_path)
+        self.assertEqual(Qfrom(output_path), q1)
+
+        q2.tocsvfile(output_path)
+        self.assertEqual(Qfrom(output_path), q2)
     ## (tojson)
     ## (tojsonfile)
     ## __array__

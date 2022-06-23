@@ -1613,10 +1613,14 @@ class Qfrom():
             return ''
         
         header_str = delimiter.join([str(key) for key in self.columns()])
-        data = [delimiter.join([str(item) for item in row]) for row in self]
+        data = [delimiter.join([f'"{str(item)}"' if delimiter in str(item) else str(item) for item in row]) for row in self]
         data_str = '\n'.join(data)
 
         return f'{header_str}\n{data_str}' if header else data_str
+
+    def tocsvfile(self, path, encoding='UTF8', delimiter=',', header=True) -> None:
+        with open(path, 'w', encoding=encoding, newline='') as f:
+            f.write(self.tocsv(delimiter=delimiter, header=header))
 
 
     #-- plot func -----------------------------------------------#
