@@ -448,21 +448,17 @@ def first(iterable, predicate_func=None):
         return None
     return next(iter(iterable))
 def list_to_array(l):
-    list_type = None
-    if len(l) > 0 and isinstance(l[0], Qfrom):
-        list_type = object
-    elif len(l) > 0 and isinstance(l[0], list):
-        list_type = object
-    elif len(l) > 0:
-        list_type = np.array([l[0]]).dtype
+    object_types = [Qfrom, list, tuple]
+
+    if len(l) > 0 and any(isinstance(l[0], t) for t in object_types):
+        a = np.empty(len(l), dtype=object)
+        for i, item in enumerate(l):
+            a[i] = item
+        return a
     else:
-        list_type = object
-    a = np.empty(len(l), dtype=list_type)
+        return np.array(l)
     
-    for i, item in enumerate(l):
-        a[i] = item
     
-    return a
 def iter_table_dict(table_dict):
     return (
         tuple(col[i] for col in table_dict.values())\
@@ -556,13 +552,14 @@ def map_table_dict(table_dict, selected_col_names, func, do_pass_none, out_col_n
     
     if out_col_names and output_col_count == len(out_col_names):
         if output_col_count == 1:
-            return {out_col_names[0]:result_array}
-        return {out_col_names[i]:col for i, col in enumerate(result_array)}
+            return {out_col_names[0]: result_array}
+        return {out_col_names[i]: col for i, col in enumerate(result_array)}
     elif out_col_names and output_col_count > len(out_col_names) and len(out_col_names) == 1:
-        return {out_col_names[0]:result_array}
+        #return {out_col_names[0]: result_array}
+        return {out_col_names[0]: list_to_array([tuple(col[i] for col in result_array) for i in range(len(first(result_array)))])}
 
     if output_col_count == 1 and len(result_array) > 0 and type(first(result_array)) is dict:
-        return {key:np.array([row[key] for row in result_array]) for key in first(result_array).keys()}
+        return {key: list_to_array([row[key] for row in result_array]) for key in first(result_array).keys()}
     if output_col_count == 1:
         return {0:result_array}
     return {i:col for i, col in enumerate(result_array)}
