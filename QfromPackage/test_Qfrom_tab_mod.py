@@ -665,7 +665,10 @@ class TestQfromClass(unittest.TestCase):
             arr[i] = item
         q_result8 = Qfrom({'a': arr})
 
+        add_two_nums = lambda a,b: a+b
+
         self.assertEqual(q.select(lambda a,b: a+b), q_result1)
+        #self.assertEqual(q.select('add_two_nums(a,b)'), q_result1)
         self.assertEqual(q.select('a, b', lambda x,y: x+y), q_result1)
         self.assertEqual(q.select(('a', 'b'), lambda x,y: x+y), q_result1)
         self.assertEqual(q.select('a, b', lambda x,y: x+y, 'c'), q_result2)
