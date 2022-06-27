@@ -229,12 +229,39 @@ class TestQfromClass(unittest.TestCase):
             {'a': 2, 'b': 5},
             {'a': 3, 'b': 6},
             ]
+        class t:
+            def __init__(self, *args):
+                self.data = list(args)
+            
+            def __getitem__(self, key):
+                return self.data[key]
+            
+            def __len__(self):
+                return len(self.data)
+
+            def __eq__(self, other):
+                if type(self) != type(other):
+                    return False
+                return self.data == other.data
+            
+            def __str__(self):
+                data_str = ', '.join(str(item) for item in self.data)
+                return f't({data_str})'
+            def __repr__(self):
+                return str(self)
+        l3 = [t(1, 2, 3), t(2, 3, 4), t(3, 4, 5)]
+        
         q_result1 = Qfrom({0: [1, 2, 3], 1: [4, 5, 6]})
         q_result2 = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+        arr = np.empty(len(l3), dtype=object)
+        for i, item in enumerate(l3):
+            arr[i] = item
+        q_result3 = Qfrom({0: arr})
 
         self.assertEqual(Qfrom(l1), q_result1)
         self.assertEqual(Qfrom(l1).tolist(), l1)
         self.assertEqual(Qfrom(l2), q_result2)
+        self.assertEqual(Qfrom(l3), q_result3)
     ## import_dict
     def test_init_dict(self):
         d = {'a': [1, 2, 3], 'b': [4, 5, 6]}
@@ -266,11 +293,34 @@ class TestQfromClass(unittest.TestCase):
         q2 = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
         q3 = Qfrom({'a': [1, 2, 3], 'b': [6, 5, 4]})
         q4 = Qfrom({'a': [1, 2, 3]})
+        class t:
+            def __init__(self, *args):
+                self.data = list(args)
+            
+            def __getitem__(self, key):
+                return self.data[key]
+            
+            def __len__(self):
+                return len(self.data)
+
+            def __eq__(self, other):
+                if type(self) != type(other):
+                    return False
+                return self.data == other.data
+            
+            def __str__(self):
+                data_str = ', '.join(str(item) for item in self.data)
+                return f't({data_str})'
+            def __repr__(self):
+                return str(self)
+        q5 = Qfrom([t(1, 2, 3), t(2, 3, 4), t(3, 4, 5)])
+        q6 = Qfrom([t(1, 2, 3), t(2, 3, 4), t(3, 4, 5)])
         
         self.assertEqual(q1, q1)
         self.assertEqual(q1, q2)
         self.assertNotEqual(q1, q3)
         self.assertNotEqual(q1, q4)
+        self.assertEqual(q5, q6)
     ## str
     def test_str(self):
         q1 = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
@@ -628,6 +678,36 @@ class TestQfromClass(unittest.TestCase):
         self.assertEqual(q.select(lambda a: {'a1':a, 'a2':a+1}), q_result7)
         self.assertEqual(q.select(lambda a: {'a':(a, a+1)}), q_result8)
         self.assertEqual(q.select(lambda a: (a, a+1), 'a'), q_result8)
+    def test_select_custom_class(self):
+        class t:
+            def __init__(self, *args):
+                self.data = list(args)
+            
+            def __getitem__(self, key):
+                return self.data[key]
+            
+            def __len__(self):
+                return len(self.data)
+
+            def __eq__(self, other):
+                return self.data == other.data
+            
+            def __str__(self):
+                data_str = ', '.join(str(item) for item in self.data)
+                return f't({data_str})'
+            def __repr__(self):
+                return str(self)
+
+        q = Qfrom({'a': [1, 2, 3]})
+        #q_result1 = Qfrom({'a': [t(1, 2, 3), t(2, 3, 4), t(3, 4, 5)]})
+        l = [t(1, 2, 3), t(2, 3, 4), t(3, 4, 5)]
+        arr = np.empty(len(l), dtype=object)
+        for i, item in enumerate(l):
+            arr[i] = item
+        q_result1 = Qfrom({'a': arr})
+
+        self.assertEqual(q.select(lambda a: t(a, a+1, a+2), 'a'), q_result1)
+        self.assertEqual(q.select(lambda a: {'a': t(a, a+1, a+2)}), q_result1)
     ## select_pn -> pass None values
     def test_select_pn(self):
         q = Qfrom({'a': [1, None, 3], 'b': [4, 5, 6]})

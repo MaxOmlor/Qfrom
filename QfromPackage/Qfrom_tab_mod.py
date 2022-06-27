@@ -344,26 +344,16 @@ def parse_iterable_to_array(iterable):
     global HANDLE_COLLECTION_SPECIALCLASSES
     iter_type = type(iterable)
     if iter_type is np.ndarray:
-        if len(iterable) > 0 and type(iterable[0]) is str:
-            return iterable.astype('object')
         return iterable
 
     if iter_type in HANDLE_COLLECTION_SPECIALCLASSES:
         raise NotImplementedError('not implemented')
     
     if isinstance(iterable, list):
-        if len(iterable) > 0 and type(iterable[0]) in [list, np.array, tuple, str]:
-            arr = np.empty(len(iterable), dtype=object)
-            arr[:] = iterable
-            return arr
-        return np.array(iterable)
+        return list_to_array(iterable)
     # numpy from iter
     iter_list = list(iterable)
-    if len(iter_list) > 0 and type(iter_list[0]) in [list, np.array, tuple, str]:
-        arr = np.empty(len(iter_list), dtype=object)
-        arr[:] = iter_list
-        return arr
-    return np.array(iter_list)
+    return list_to_array(iter_list)
 def parse_iterables_to_arrays(table_dict):
     global HANLDE_TABLE_SPECIALCLASSES
 
@@ -447,13 +437,14 @@ def first(iterable, predicate_func=None):
                 return item
         return None
     return next(iter(iterable))
-def list_to_array(l):
-    object_types = [Qfrom, list, tuple]
 
-    if len(l) > 0 and any(isinstance(l[0], t) for t in object_types):
+def will_be_tranformed_to_array(data):
+    class_dir = dir(type(data))
+    return '__len__' in class_dir and '__getitem__' in class_dir
+def list_to_array(l):
+    if len(l) > 0 and will_be_tranformed_to_array(l[0]):
         a = np.empty(len(l), dtype=object)
-        for i, item in enumerate(l):
-            a[i] = item
+        a[:] = l
         return a
     else:
         return np.array(l)
@@ -694,7 +685,7 @@ def group_by_table_dict(table_dict, key_array, select_func):
             group_array[i] = Qfrom(select_func({key: col[group] for key, col in table_dict.items()}))
     
     result_dict = {
-        'key': np.array(list(group_ids_dict.keys())),
+        'key': list_to_array(list(group_ids_dict.keys())),
         'group': group_array}
 
     return result_dict
@@ -927,24 +918,11 @@ class Operation(enum.Enum):
 
 class Qfrom():
     def __init__(self, collection=None, operation_list=[]) -> None:
-        #if type(table_dict) is str:
-        #    self.table_dict =  parse_iterables_to_arrays(parse_str_to_collection(table_dict))
-        #elif type(table_dict) in [list, np.ndarray]:
-        #    self.table_dict =  parse_iterables_to_arrays({'x':table_dict})
-        #else:
-        #    self.table_dict =  parse_iterables_to_arrays(table_dict)
         self.table_dict = dict()
         if isinstance(collection, str):
-            self.table_dict =  parse_iterables_to_arrays(parse_str_to_collection(collection))
+            self.table_dict = parse_iterables_to_arrays(parse_str_to_collection(collection))
         elif isinstance(collection, dict):
-            if len(collection) == 0:
-                self.table_dict = collection
-            else:
-                first_item = first(collection)
-                if type(collection[first_item]) is not np.ndarray:
-                    self.table_dict = {key:np.array(value) for key, value in collection.items()}
-                else:
-                    self.table_dict = collection
+            self.table_dict = parse_iterables_to_arrays(collection)
         elif isinstance(collection, Qfrom):
             collection.calculate()
             self.table_dict = {key:np.copy(value) for key, value in collection.table_dict.items()}
@@ -953,11 +931,11 @@ class Qfrom():
             if len(collection_list) > 0:
                 first_item = first(collection_list)
                 if isinstance(first_item, dict):
-                    self.table_dict = {key:np.array([item[key] for item in collection_list]) for key in first_item.keys()}
+                    self.table_dict = {key: list_to_array([item[key] for item in collection_list]) for key in first_item.keys()}
                 elif isinstance(first_item, tuple):
-                    self.table_dict = {i:np.array([item[i] for item in collection_list]) for i in range(len(first_item))}
+                    self.table_dict = {i: list_to_array([item[i] for item in collection_list]) for i in range(len(first_item))}
                 else:
-                    self.table_dict = {0:np.array(collection_list)}
+                    self.table_dict = {0: list_to_array(collection_list)}
         
         self.__operation_list = operation_list
 
@@ -1086,11 +1064,11 @@ class Qfrom():
         return str(self)
     
     def __eq__(self, other) -> bool:
-        #if any(self.__operation_list):
         self.calculate()
         if isinstance(other, Qfrom):
-            return all(col_name in other.table_dict and np.array_equal(col, other.table_dict[col_name]) for col_name, col in self.table_dict.items())\
-                and all(col_name in self.table_dict.keys() for col_name in other.table_dict.keys())
+            return all(key in other.table_dict for key in self.table_dict)\
+                and all(key in self.table_dict for key in other.table_dict)\
+                and all(np.array_equal(col, other.table_dict[key]) for key, col in self.table_dict.items())
         return False
 
     def __contains__(self, item):
