@@ -1306,6 +1306,11 @@ class Qfrom():
         elif isinstance(collection, Qfrom):
             collection.calculate()
             self.table_dict = {key:np.copy(value) for key, value in collection.table_dict.items()}
+        elif isinstance(collection, np.ndarray) and len(collection.shape) == 1:
+            self.table_dict = {0: collection}
+        elif isinstance(collection, np.ndarray) and len(collection.shape) > 1:
+            collection_rot = np.rot90(collection)
+            self.table_dict = {i:col for i, col in enumerate(collection_rot[::-1])}
         elif isinstance(collection, Iterable):
             collection_list = list(collection)
             if len(collection_list) > 0:
