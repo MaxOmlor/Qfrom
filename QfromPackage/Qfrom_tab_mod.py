@@ -960,15 +960,17 @@ class Qfrom():
         
         if len(args) == 1:
             key = args[0]
-            if type(key) is int:
+            if isinstance(key, int) or np.issubdtype(type(key), np.integer):
                 return tuple(col[key] for col in self.table_dict.values()) if len(list(self.table_dict.values())) != 1 else first(self.table_dict.values())[key]
             
-            if type(key) is slice:
+            if isinstance(key, slice):
                 result = {col_name: col[key] for col_name, col in self.table_dict.items()}
                 return Qfrom(result)
         
-            if type(key) is tuple and len(key) == 2 and type(key[0]) is str and type(key[1]) is int:
+            if isinstance(key, tuple) and len(key) == 2 and type(key[0]) is str and type(key[1]) is int:
                 return self.table_dict[key[0]][key[1]]
+            
+            #print(f'{type(key) = }')
         
         #if len(args[0]) > 0:
         #    return self.select(*args[0])
@@ -1440,11 +1442,15 @@ class Qfrom():
 
 
     #-- expanded list func --------------------------------------#
-    def any(self):
+    def any(self, predicate=None):
         self.calculate()
-        if len(self.table_dict) == 0:
+
+        q_filtered = self.where(predicate) if predicate else self
+        q_filtered.calculate()
+
+        if len(q_filtered.table_dict) == 0:
             return False
-        if  len(list(self.table_dict.values())[0]) == 0:
+        if  len(list(q_filtered.table_dict.values())[0]) == 0:
             return False
         return True
     '''def any(self, predicate=None) -> bool:
