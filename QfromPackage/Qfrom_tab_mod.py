@@ -1,5 +1,6 @@
+from __future__ import annotations
 from collections.abc import Iterable
-from typing import Any
+from typing import Any, overload
 import pandas as pd
 import csv
 import numpy as np
@@ -19,6 +20,7 @@ import chardet
 from io import StringIO
 import keyword
 import builtins
+import typing
 
 
 
@@ -1001,7 +1003,301 @@ class Operation(enum.Enum):
     COLSELECTJOIN   = 16
 
 class Qfrom():
-    def __init__(self, collection=None, operation_list=[]) -> None:
+    ## import_list
+    @overload
+    def __init__(self, list: list) -> Qfrom: ...
+    ## import_dict
+    @overload
+    def __init__(self, dict: dict[str, list]) -> Qfrom: ...
+    ## (import_set)
+    ## (import_array)
+    ## (import_mtx)
+    ## import_dataframe
+    @overload
+    def __init__(self, df: pd.DataFrame) -> Qfrom: ...
+    ## import_csv
+    @overload
+    def __init__(self, csv: str) -> Qfrom: ...
+    @overload
+    def __init__(self, csv_path: str) -> Qfrom: ...
+    ## (import_json)
+    ## import_generator
+
+    ## eq
+    ## str
+    ## repr
+
+    ## append
+    ## setitem
+    ## getitem
+    ## contains
+    ## iter
+    
+    ## rename
+    ## orderby
+    ## orderby_pn
+    ## (shuffle)
+    ## first
+    ## columns
+    ## (stats)
+    ## copy
+    ## (deep_copy)
+
+    ## where
+    @overload
+    def where(self, columns: str) -> Qfrom: ...
+    @overload
+    def where(self, columns: tuple[str]) -> Qfrom: ...
+    @overload
+    def where(self, map_func: typing.Callable) -> Qfrom: ...
+    @overload
+    def where(self, columns: str, map_func: typing.Callable) -> Qfrom: ...
+    @overload
+    def where(self, columns: tuple[str], map_func: typing.Callable) -> Qfrom: ...
+    ## split
+    ## select
+    @overload
+    def select(self, columns: str) -> Qfrom: ...
+    @overload
+    def select(self, columns: tuple[str]) -> Qfrom: ...
+    @overload
+    def select(self, map_func: typing.Callable) -> Qfrom: ...
+    @overload
+    def select(self, map_func: typing.Callable[[Any], tuple]) -> Qfrom: ...
+    @overload
+    def select(self, map_func: typing.Callable[[Any], dict]) -> Qfrom: ...
+    @overload
+    def select(self, columns: str, map_func: typing.Callable) -> Qfrom: ...
+    @overload
+    def select(self, columns: tuple[str], map_func: typing.Callable) -> Qfrom: ...
+    @overload
+    def select(self, map_func: typing.Callable, output_columns: str) -> Qfrom: ...
+    @overload
+    def select(self, map_func: typing.Callable, output_columns: tuple[str]) -> Qfrom: ...
+    @overload
+    def select(self, columns: str, map_func: typing.Callable, output_columns: str) -> Qfrom: ...
+    @overload
+    def select(self, columns: str, map_func: typing.Callable, output_columns: tuple[str]) -> Qfrom: ...
+    @overload
+    def select(self, columns: tuple[str], map_func: typing.Callable, output_columns: str) -> Qfrom: ...
+    @overload
+    def select(self, columns: tuple[str], map_func: typing.Callable, output_columns: tuple[str]) -> Qfrom: ...
+    ## select_pn -> pass None values
+    @overload
+    def select_pn(self, columns: str) -> Qfrom: ...
+    @overload
+    def select_pn(self, columns: tuple[str]) -> Qfrom: ...
+    @overload
+    def select_pn(self, map_func: typing.Callable) -> Qfrom: ...
+    @overload
+    def select_pn(self, map_func: typing.Callable[[Any], tuple]) -> Qfrom: ...
+    @overload
+    def select_pn(self, map_func: typing.Callable[[Any], dict]) -> Qfrom: ...
+    @overload
+    def select_pn(self, columns: str, map_func: typing.Callable) -> Qfrom: ...
+    @overload
+    def select_pn(self, columns: tuple[str], map_func: typing.Callable) -> Qfrom: ...
+    @overload
+    def select_pn(self, map_func: typing.Callable, output_columns: str) -> Qfrom: ...
+    @overload
+    def select_pn(self, map_func: typing.Callable, output_columns: tuple[str]) -> Qfrom: ...
+    @overload
+    def select_pn(self, columns: str, map_func: typing.Callable, output_columns: str) -> Qfrom: ...
+    @overload
+    def select_pn(self, columns: str, map_func: typing.Callable, output_columns: tuple[str]) -> Qfrom: ...
+    @overload
+    def select_pn(self, columns: tuple[str], map_func: typing.Callable, output_columns: str) -> Qfrom: ...
+    @overload
+    def select_pn(self, columns: tuple[str], map_func: typing.Callable, output_columns: tuple[str]) -> Qfrom: ...
+    ## select_join -> map-op which gets joined directly
+    @overload
+    def select_join(self, columns: str) -> Qfrom: ...
+    @overload
+    def select_join(self, columns: tuple[str]) -> Qfrom: ...
+    @overload
+    def select_join(self, map_func: typing.Callable) -> Qfrom: ...
+    @overload
+    def select_join(self, map_func: typing.Callable[[Any], tuple]) -> Qfrom: ...
+    @overload
+    def select_join(self, map_func: typing.Callable[[Any], dict]) -> Qfrom: ...
+    @overload
+    def select_join(self, columns: str, map_func: typing.Callable) -> Qfrom: ...
+    @overload
+    def select_join(self, columns: tuple[str], map_func: typing.Callable) -> Qfrom: ...
+    @overload
+    def select_join(self, map_func: typing.Callable, output_columns: str) -> Qfrom: ...
+    @overload
+    def select_join(self, map_func: typing.Callable, output_columns: tuple[str]) -> Qfrom: ...
+    @overload
+    def select_join(self, columns: str, map_func: typing.Callable, output_columns: str) -> Qfrom: ...
+    @overload
+    def select_join(self, columns: str, map_func: typing.Callable, output_columns: tuple[str]) -> Qfrom: ...
+    @overload
+    def select_join(self, columns: tuple[str], map_func: typing.Callable, output_columns: str) -> Qfrom: ...
+    @overload
+    def select_join(self, columns: tuple[str], map_func: typing.Callable, output_columns: tuple[str]) -> Qfrom: ...
+    ## select_join_pn
+    @overload
+    def select_join_pn(self, columns: str) -> Qfrom: ...
+    @overload
+    def select_join_pn(self, columns: tuple[str]) -> Qfrom: ...
+    @overload
+    def select_join_pn(self, map_func: typing.Callable) -> Qfrom: ...
+    @overload
+    def select_join_pn(self, map_func: typing.Callable[[Any], tuple]) -> Qfrom: ...
+    @overload
+    def select_join_pn(self, map_func: typing.Callable[[Any], dict]) -> Qfrom: ...
+    @overload
+    def select_join_pn(self, columns: str, map_func: typing.Callable) -> Qfrom: ...
+    @overload
+    def select_join_pn(self, columns: tuple[str], map_func: typing.Callable) -> Qfrom: ...
+    @overload
+    def select_join_pn(self, map_func: typing.Callable, output_columns: str) -> Qfrom: ...
+    @overload
+    def select_join_pn(self, map_func: typing.Callable, output_columns: tuple[str]) -> Qfrom: ...
+    @overload
+    def select_join_pn(self, columns: str, map_func: typing.Callable, output_columns: str) -> Qfrom: ...
+    @overload
+    def select_join_pn(self, columns: str, map_func: typing.Callable, output_columns: tuple[str]) -> Qfrom: ...
+    @overload
+    def select_join_pn(self, columns: tuple[str], map_func: typing.Callable, output_columns: str) -> Qfrom: ...
+    @overload
+    def select_join_pn(self, columns: tuple[str], map_func: typing.Callable, output_columns: tuple[str]) -> Qfrom: ...
+    ## col_where
+    @overload
+    def col_where(self, columns: str) -> Qfrom: ...
+    @overload
+    def col_where(self, columns: tuple[str]) -> Qfrom: ...
+    @overload
+    def col_where(self, map_func: typing.Callable) -> Qfrom: ...
+    @overload
+    def col_where(self, columns: str, map_func: typing.Callable) -> Qfrom: ...
+    @overload
+    def col_where(self, columns: tuple[str], map_func: typing.Callable) -> Qfrom: ...
+    ## col_select
+    @overload
+    def col_select(self, columns: str) -> Qfrom: ...
+    @overload
+    def col_select(self, columns: tuple[str]) -> Qfrom: ...
+    @overload
+    def col_select(self, map_func: typing.Callable) -> Qfrom: ...
+    @overload
+    def col_select(self, map_func: typing.Callable[[Any], tuple]) -> Qfrom: ...
+    @overload
+    def col_select(self, map_func: typing.Callable[[Any], dict]) -> Qfrom: ...
+    @overload
+    def col_select(self, columns: str, map_func: typing.Callable) -> Qfrom: ...
+    @overload
+    def col_select(self, columns: tuple[str], map_func: typing.Callable) -> Qfrom: ...
+    @overload
+    def col_select(self, map_func: typing.Callable, output_columns: str) -> Qfrom: ...
+    @overload
+    def col_select(self, map_func: typing.Callable, output_columns: tuple[str]) -> Qfrom: ...
+    @overload
+    def col_select(self, columns: str, map_func: typing.Callable, output_columns: str) -> Qfrom: ...
+    @overload
+    def col_select(self, columns: str, map_func: typing.Callable, output_columns: tuple[str]) -> Qfrom: ...
+    @overload
+    def col_select(self, columns: tuple[str], map_func: typing.Callable, output_columns: str) -> Qfrom: ...
+    @overload
+    def col_select(self, columns: tuple[str], map_func: typing.Callable, output_columns: tuple[str]) -> Qfrom: ...
+    ## col_select_join
+    @overload
+    def col_select_join(self, columns: str) -> Qfrom: ...
+    @overload
+    def col_select_join(self, columns: tuple[str]) -> Qfrom: ...
+    @overload
+    def col_select_join(self, map_func: typing.Callable) -> Qfrom: ...
+    @overload
+    def col_select_join(self, map_func: typing.Callable[[Any], tuple]) -> Qfrom: ...
+    @overload
+    def col_select_join(self, map_func: typing.Callable[[Any], dict]) -> Qfrom: ...
+    @overload
+    def col_select_join(self, columns: str, map_func: typing.Callable) -> Qfrom: ...
+    @overload
+    def col_select_join(self, columns: tuple[str], map_func: typing.Callable) -> Qfrom: ...
+    @overload
+    def col_select_join(self, map_func: typing.Callable, output_columns: str) -> Qfrom: ...
+    @overload
+    def col_select_join(self, map_func: typing.Callable, output_columns: tuple[str]) -> Qfrom: ...
+    @overload
+    def col_select_join(self, columns: str, map_func: typing.Callable, output_columns: str) -> Qfrom: ...
+    @overload
+    def col_select_join(self, columns: str, map_func: typing.Callable, output_columns: tuple[str]) -> Qfrom: ...
+    @overload
+    def col_select_join(self, columns: tuple[str], map_func: typing.Callable, output_columns: str) -> Qfrom: ...
+    @overload
+    def col_select_join(self, columns: tuple[str], map_func: typing.Callable, output_columns: tuple[str]) -> Qfrom: ...
+    ## (normalize)
+    
+    ## join
+    ## join_cross
+    ## join_outer
+    ## join_outer_left
+    ## join_outer_right
+    ## join_id
+    ## join_id_outer
+    ## join_id_outer_left
+    ## join_id_outer_right
+
+    ## (union)
+    ## (intersect)
+    ## (difference)
+    ## (symmetric_difference)
+    ## (partition)
+    ## concat
+    ## concat_outer
+    ## concat_outer_left
+    ## concat_outer_right
+
+    ## groupby
+    ## groupby_pn
+    ## flatten
+    ## flatten_pn
+    ## flatten_join
+    ## flatten_join_pn
+    ## unique
+    
+    ## col_agg
+    ## pair_agg
+    ## any
+    ## all
+    ## min
+    ## min_id
+    ## min_item
+    ## max
+    ## max_id
+    ## max_item
+    ## sum
+    ## mean
+    ## median
+    ## var
+    ## len
+    ## size
+
+    ## calc
+    ## call
+
+    ## plot
+    ## plot_bar
+    ## plot_hist
+    ## plot_box
+    ## plot_scatter
+
+    ## tolist
+    ## (toset)
+    ## todict
+    ## toarray
+    ## (tomtx)
+    ## todf
+    ## tocsv
+    ## (tocsvfile)
+    ## (tojson)
+    ## (tojsonfile)
+    ## __array__
+
+
+    def __init__(self, collection=None, operation_list=[]) -> Qfrom:
         self.table_dict = dict()
         if isinstance(collection, str):
             self.table_dict = parse_iterables_to_arrays(parse_str_to_collection(collection))
@@ -1103,11 +1399,11 @@ class Qfrom():
 
         raise ValueError('key must be of type int, str, tuple or list')
 
-    def __iter__(self):
+    def __iter__(self) -> Iterable:
         self.calculate()
         return iter_table_dict(self.table_dict)
     
-    def append(self, item):
+    def append(self, item: Any|tuple|dict) -> Qfrom:
         operation = {
             'Operation': Operation.APPEND,
             'item': item
@@ -1116,7 +1412,7 @@ class Qfrom():
             self.table_dict,
             operation_list=self.__operation_list+[operation])
 
-    def copy(self):
+    def copy(self) -> Qfrom:
         #self.calculate()
         #new_table_dict = {key:np.copy(value) for key, value in self.table_dict.items()}
         return Qfrom(self)
@@ -1141,7 +1437,7 @@ class Qfrom():
         #return 'Qfrom(' + str(self.table_dict) + ')'
         return str(self)
     
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Qfrom) -> bool:
         self.calculate()
         if isinstance(other, Qfrom):
             return all(key in other.table_dict for key in self.table_dict)\
@@ -1149,7 +1445,7 @@ class Qfrom():
                 and all(np.array_equal(col, other.table_dict[key]) for key, col in self.table_dict.items())
         return False
 
-    def __contains__(self, item):
+    def __contains__(self, item: Any|tuple|dict):
         self.calculate()
 
         if type(item) is tuple:
@@ -1172,7 +1468,7 @@ class Qfrom():
 
 
     #-- table func ----------------------------------------------#
-    def rename(self, arg):
+    def rename(self, arg) -> Qfrom:
         rename_func = None
         arg_dict = arg
 
@@ -1191,7 +1487,7 @@ class Qfrom():
             self.table_dict,
             operation_list=self.__operation_list+[operation])
 
-    def orderby(self, *args, pass_none=False, reverse=False):
+    def orderby(self, *args, pass_none=False, reverse=False) -> Qfrom:
         if type(reverse) is not bool:
             raise ValueError('reverse should be a boolean not a ' + str(type(reverse)))
         selected_col_names,\
@@ -1216,10 +1512,10 @@ class Qfrom():
         return Qfrom(
             self.table_dict,
             operation_list=self.__operation_list+[operation])
-    def orderby_pn(self, *args, reverse=False):
+    def orderby_pn(self, *args, reverse=False) -> Qfrom:
         return self.orderby(*args, pass_none=True, reverse=reverse)
 
-    def first(self, *args):
+    def first(self, *args) -> Qfrom:
         if len(args) > 0:
             selected_col_names, mod_predicate = trans_predicate_func_args(args, keys=self.columns(), and_key_word='and')
             var_names = mod_predicate.__code__.co_varnames
@@ -1233,10 +1529,10 @@ class Qfrom():
             return first(self, predicate_func)
         return first(self)
 
-    def columns(self):
+    def columns(self) -> tuple[str]:
         return tuple(self.table_dict.keys())
 
-    def where(self, *args):
+    def where(self, *args) -> Qfrom:
         selected_col_names, where_predicate = trans_predicate_func_args(args, keys=self.columns(), and_key_word='and')
 
         operation = {
@@ -1275,7 +1571,7 @@ class Qfrom():
         print(result)
         return result'''
 
-    def select(self, *args, pass_none=False):
+    def select(self, *args, pass_none=False) -> Qfrom:
         #print(f'select() -> {args=}, {pass_none=}')
         selected_col_names,\
         map_func,\
@@ -1298,9 +1594,9 @@ class Qfrom():
         return Qfrom(
             self.table_dict,
             operation_list=self.__operation_list+[operation])
-    def select_pn(self, *args):
+    def select_pn(self, *args) -> Qfrom:
         return self.select(*args, pass_none=True)
-    def select_join(self, *args, pass_none=False):
+    def select_join(self, *args, pass_none=False) -> Qfrom:
         selected_col_names,\
         map_func,\
         new_col_names,\
@@ -1322,10 +1618,10 @@ class Qfrom():
         return Qfrom(
             self.table_dict,
             operation_list=self.__operation_list+[operation])
-    def select_join_pn(self, *args):
+    def select_join_pn(self, *args) -> Qfrom:
         return self.select_join(*args, pass_none=True)
 
-    def col_where(self, *args):
+    def col_where(self, *args) -> Qfrom:
         selected_col_names, where_predicate = trans_predicate_func_args(args, keys=self.columns(), and_key_word='&')
 
         operation = {
@@ -1337,7 +1633,7 @@ class Qfrom():
         return Qfrom(
             self.table_dict,
             operation_list=self.__operation_list+[operation])
-    def col_select(self, *args):
+    def col_select(self, *args) -> Qfrom:
         #print(f'select() -> {args=}, {pass_none=}')
         selected_col_names,\
         map_func,\
@@ -1359,7 +1655,7 @@ class Qfrom():
         return Qfrom(
             self.table_dict,
             operation_list=self.__operation_list+[operation])
-    def col_select_join(self, *args):
+    def col_select_join(self, *args) -> Qfrom:
         #print(f'select() -> {args=}, {pass_none=}')
         selected_col_names,\
         map_func,\
@@ -1382,12 +1678,12 @@ class Qfrom():
             self.table_dict,
             operation_list=self.__operation_list+[operation])
 
-    def shuffle(self):
+    def shuffle(self) -> Qfrom:
         self.calculate()
         dict_shuffled = {key: np.random.shuffle(np.copy(col)) for key, col in self.table_dict.items()}
         return Qfrom(dict_shuffled)
 
-    def join(self, other, key_dict=None, join_outer_left=False, join_outer_right=False):
+    def join(self, other: Qfrom, key_dict=None, join_outer_left=False, join_outer_right=False) -> Qfrom:
         operation = {
             'Operation': Operation.JOIN,
             'other': other.table_dict,
@@ -1398,7 +1694,7 @@ class Qfrom():
         return Qfrom(
             self.table_dict,
             operation_list=self.__operation_list+[operation])
-    def join_cross(self, other):
+    def join_cross(self, other: Qfrom) -> Qfrom:
         operation = {
             'Operation': Operation.JOINCROSS,
             'other': other.table_dict,
@@ -1406,13 +1702,13 @@ class Qfrom():
         return Qfrom(
             self.table_dict,
             operation_list=self.__operation_list+[operation])
-    def join_outer(self, other, key_dict=None):
+    def join_outer(self, other: Qfrom, key_dict=None) -> Qfrom:
         return self.join(other, key_dict, join_outer_left=True, join_outer_right=True)
-    def join_outer_left(self, other, key_dict=None):
+    def join_outer_left(self, other: Qfrom, key_dict=None) -> Qfrom:
         return self.join(other, key_dict, join_outer_left=True, join_outer_right=False)
-    def join_outer_right(self, other, key_dict=None):
+    def join_outer_right(self, other: Qfrom, key_dict=None) -> Qfrom:
         return self.join(other, key_dict, join_outer_left=False, join_outer_right=True)
-    def join_id(self, other, join_outer_left=False, join_outer_right=False):
+    def join_id(self, other: Qfrom, join_outer_left=False, join_outer_right=False) -> Qfrom:
         operation = {
             'Operation': Operation.JOINID,
             'other': other.table_dict,
@@ -1422,14 +1718,14 @@ class Qfrom():
         return Qfrom(
             self.table_dict,
             operation_list=self.__operation_list+[operation])
-    def join_id_outer(self, other):
+    def join_id_outer(self, other: Qfrom) -> Qfrom:
         return self.join_id(other, join_outer_left=True, join_outer_right=True)
-    def join_id_outer_left(self, other):
+    def join_id_outer_left(self, other: Qfrom) -> Qfrom:
         return self.join_id(other, join_outer_left=True, join_outer_right=False)
-    def join_id_outer_right(self, other):
+    def join_id_outer_right(self, other: Qfrom) -> Qfrom:
         return self.join_id(other, join_outer_left=False, join_outer_right=True)
 
-    def concat(self, other, join_outer_left=False, join_outer_right=False):
+    def concat(self, other: Qfrom, join_outer_left=False, join_outer_right=False) -> Qfrom:
         operation = {
             'Operation': Operation.CONCAT,
             'others': [q.table_dict for q in other] if type(other) is list else [other.table_dict],
@@ -1439,14 +1735,14 @@ class Qfrom():
         return Qfrom(
             self.table_dict,
             operation_list=self.__operation_list+[operation])
-    def concat_outer(self, other):
+    def concat_outer(self, other: Qfrom) -> Qfrom:
         return self.concat(other, join_outer_left=True, join_outer_right=True)
-    def concat_outer_left(self, other):
+    def concat_outer_left(self, other: Qfrom) -> Qfrom:
         return self.concat(other, join_outer_left=True, join_outer_right=False)
-    def concat_outer_right(self, other):
+    def concat_outer_right(self, other: Qfrom) -> Qfrom:
         return self.concat(other, join_outer_left=False, join_outer_right=True)
 
-    def groupby(self, *args, pass_none=False):
+    def groupby(self, *args, pass_none=False) -> Qfrom:
         selected_col_names,\
         map_func,\
         select_join_func,\
@@ -1468,10 +1764,10 @@ class Qfrom():
         return Qfrom(
             self.table_dict,
             operation_list=self.__operation_list+[operation])
-    def groupby_pn(self, *args):
+    def groupby_pn(self, *args) -> Qfrom:
         return self.groupby(*args, pass_none=True)
 
-    def flatten(self, *args, pass_none=False):
+    def flatten(self, *args, pass_none=False) -> Qfrom:
         selected_col_names,\
         map_func,\
         select_join_func,\
@@ -1493,7 +1789,7 @@ class Qfrom():
         return Qfrom(
             self.table_dict,
             operation_list=self.__operation_list+[operation])
-    def flatten_join(self, *args, pass_none=False):
+    def flatten_join(self, *args, pass_none=False) -> Qfrom:
         selected_col_names,\
         map_func,\
         select_join_func,\
@@ -1516,12 +1812,12 @@ class Qfrom():
             self.table_dict,
             operation_list=self.__operation_list+[operation])
 
-    def unique(self, *args, pass_none=False):
+    def unique(self, *args, pass_none=False) -> Qfrom:
         return self\
             .groupby(*args, pass_none=pass_none)\
             .select(lambda group:group[0], self.columns(), pass_none=pass_none)
 
-    def col_agg(self, *args):
+    def col_agg(self, *args) -> Any|tuple:
         self.calculate()
 
         selected_col_names,\
@@ -1535,7 +1831,7 @@ class Qfrom():
 
         return map_func(*args)
         
-    def pair_agg(self, *args):
+    def pair_agg(self, *args) -> Any|tuple:
         self.calculate()
 
         if len(self) == 0:
@@ -1565,13 +1861,8 @@ class Qfrom():
             return agg
 
 
-
-
-        
-
-
     #-- expanded list func --------------------------------------#
-    def any(self, predicate=None):
+    def any(self, predicate=None) -> bool:
         self.calculate()
 
         q_filtered = self.where(predicate) if predicate else self
@@ -1582,7 +1873,7 @@ class Qfrom():
         if  len(list(q_filtered.table_dict.values())[0]) == 0:
             return False
         return True
-    def col_any(self, predicate=None):
+    def col_any(self, predicate=None) -> bool:
         self.calculate()
 
         q_filtered = self.col_where(predicate) if predicate else self
@@ -1610,7 +1901,7 @@ class Qfrom():
                 return True
         return False'''
     
-    def min(self, *args):
+    def min(self, *args) -> Any:
         self.calculate()
         q_result = self.select(*args) if len(args) > 0 else self
         q_result.calculate()
@@ -1618,7 +1909,7 @@ class Qfrom():
             return first(q_result.table_dict.values()).min()
         return tuple(col.min() for col in q_result.table_dict.values())
     
-    def min_id(self, *args):
+    def min_id(self, *args) -> int:
         self.calculate()
         q_result = self.select(*args) if len(args) > 0 else self
         q_result.calculate()
@@ -1626,7 +1917,7 @@ class Qfrom():
             return int(np.argmin(first(q_result.table_dict.values())))
         return tuple(int(np.argmin(col)) for col in q_result.table_dict.values())
     
-    def min_item(self, *args):
+    def min_item(self, *args) -> Any|tuple:
         self.calculate()
         q_result = self.select(*args) if len(args) > 0 else self
         q_result.calculate()
@@ -1636,7 +1927,7 @@ class Qfrom():
         ids = tuple(int(np.argmin(col)) for col in q_result.table_dict.values())
         return tuple(self[i] for i in ids)
 
-    def max(self, *args):
+    def max(self, *args) -> Any:
         self.calculate()
         q_result = self.select(*args) if len(args) > 0 else self
         q_result.calculate()
@@ -1644,7 +1935,7 @@ class Qfrom():
             return first(q_result.table_dict.values()).max()
         return tuple(col.max() for col in q_result.table_dict.values())
     
-    def max_id(self, *args):
+    def max_id(self, *args) -> int:
         self.calculate()
         q_result = self.select(*args) if len(args) > 0 else self
         q_result.calculate()
@@ -1652,7 +1943,7 @@ class Qfrom():
             return int(np.argmax(first(q_result.table_dict.values())))
         return tuple(int(np.argmax(col)) for col in q_result.table_dict.values())
     
-    def max_item(self, *args):
+    def max_item(self, *args) -> Any|tuple:
         self.calculate()
         q_result = self.select(*args) if len(args) > 0 else self
         q_result.calculate()
@@ -1662,7 +1953,7 @@ class Qfrom():
         ids = tuple(int(np.argmax(col)) for col in q_result.table_dict.values())
         return tuple(self[i] for i in ids)
 
-    def sum(self, *args):
+    def sum(self, *args) -> Any:
         self.calculate()
         q_result = self.select(*args) if len(args) > 0 else self
         q_result.calculate()
@@ -1670,7 +1961,7 @@ class Qfrom():
             return first(q_result.table_dict.values()).sum()
         return tuple(col.sum() for col in q_result.table_dict.values())
 
-    def mean(self, *args):
+    def mean(self, *args) -> Any:
         self.calculate()
         q_result = self.select(*args) if len(args) > 0 else self
         q_result.calculate()
@@ -1678,7 +1969,7 @@ class Qfrom():
             return np.mean(first(q_result.table_dict.values()))
         return tuple(np.mean(col) for col in q_result.table_dict.values())
 
-    def median(self, *args):
+    def median(self, *args) -> Any:
         self.calculate()
         q_result = self.select(*args) if len(args) > 0 else self
         q_result.calculate()
@@ -1686,7 +1977,7 @@ class Qfrom():
             return np.median(first(q_result.table_dict.values()))
         return tuple(np.median(col) for col in q_result.table_dict.values())
 
-    def var(self, *args):
+    def var(self, *args) -> Any:
         self.calculate()
         q_result = self.select(*args) if len(args) > 0 else self
         q_result.calculate()
@@ -1695,7 +1986,7 @@ class Qfrom():
         return tuple(np.var(col) for col in q_result.table_dict.values())
 
     #-- special func --------------------------------------------#
-    def calculate(self):
+    def calculate(self) -> dict[str, np.ndarray]:
         if any(self.__operation_list):
             #print(f'calculate() -> {self.__operation_list=}')
             self.table_dict = calc_operations(dict(self.table_dict), self.__operation_list)
@@ -1716,11 +2007,11 @@ class Qfrom():
             return [self[i] for i in range(len(first(self.table_dict.values())))]
         return []
 
-    def todict(self):
+    def todict(self) -> dict[str, np.ndarray]:
         self.calculate()
         return self.table_dict
     
-    def toarray(self) -> np.array:
+    def toarray(self) -> np.ndarray:
         self.calculate()
 
         if len(self.table_dict) == 0:
@@ -1765,7 +2056,7 @@ class Qfrom():
         
         q_data = self.orderby(x) if order_by_x else self
         q_data.calculate()
-        col_list = [col for col in q_data.columns() if col != x]
+        col_list = [key for key in q_data.columns() if key != x]
 
         x_list = q_data[x].toarray()
         ax.set_xlabel(x)
