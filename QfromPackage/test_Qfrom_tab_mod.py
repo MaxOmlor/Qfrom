@@ -22,21 +22,23 @@ class TestTransFuncStr(unittest.TestCase):
         self.assertEqual('a == 1 or b == 1', 'predicate')'''
     def test_predicatestr_to_funcstr(self):
         keys = ('a', 'b', 'c')
-        self.assertEqual(predicatestr_to_funcstr('a', keys), 'lambda a: a')
-        self.assertTrue(predicatestr_to_funcstr('a, b', keys) in ['lambda a, b: (a) and (b)', 'lambda b, a: (a) and (b)'])
-        self.assertEqual(predicatestr_to_funcstr('a == "a"', keys), 'lambda a: a == "a"')
-        self.assertEqual(predicatestr_to_funcstr('"a" == a', keys), 'lambda a: "a" == a')
-        self.assertEqual(predicatestr_to_funcstr('a != "a"', keys), 'lambda a: a != "a"')
-        self.assertEqual(predicatestr_to_funcstr('a in ["a"]', keys), 'lambda a: a in ["a"]')
-        self.assertEqual(predicatestr_to_funcstr('a is None', keys), 'lambda a: a is None')
-        self.assertEqual(predicatestr_to_funcstr('a is not None', keys), 'lambda a: a is not None')
-        self.assertEqual(predicatestr_to_funcstr('a==1 or a==2', keys), 'lambda a: a==1 or a==2')
-        self.assertTrue(predicatestr_to_funcstr('a==1 and b==2', keys) in ['lambda a, b: a==1 and b==2', 'lambda b, a: a==1 and b==2'])
-        self.assertEqual(predicatestr_to_funcstr('2<a<5', keys), 'lambda a: 2<a<5')
-        self.assertEqual(predicatestr_to_funcstr('2<=a<=5', keys), 'lambda a: 2<=a<=5')
-        self.assertTrue(predicatestr_to_funcstr('a or b', keys) in ['lambda a, b: a or b', 'lambda b, a: a or b'])
-        self.assertEqual(predicatestr_to_funcstr('not not a', keys), 'lambda a: not not a')
-        self.assertTrue(predicatestr_to_funcstr('a%2, b==1', keys) in ['lambda a, b: (a%2) and (b==1)', 'lambda b, a: (a%2) and (b==1)'])
+        self.assertEqual(predicatestr_to_funcstr('a', keys, and_key_word='and'), 'lambda a: a')
+        self.assertTrue(predicatestr_to_funcstr('a, b', keys, and_key_word='and') in ['lambda a, b: (a) and (b)', 'lambda b, a: (a) and (b)'])
+        self.assertTrue(predicatestr_to_funcstr('a, b', keys, and_key_word='&') in ['lambda a, b: (a) & (b)', 'lambda b, a: (a) & (b)'])
+        self.assertEqual(predicatestr_to_funcstr('a == "a"', keys, and_key_word='and'), 'lambda a: a == "a"')
+        self.assertEqual(predicatestr_to_funcstr('"a" == a', keys, and_key_word='and'), 'lambda a: "a" == a')
+        self.assertEqual(predicatestr_to_funcstr('a != "a"', keys, and_key_word='and'), 'lambda a: a != "a"')
+        self.assertEqual(predicatestr_to_funcstr('a in ["a"]', keys, and_key_word='and'), 'lambda a: a in ["a"]')
+        self.assertEqual(predicatestr_to_funcstr('a is None', keys, and_key_word='and'), 'lambda a: a is None')
+        self.assertEqual(predicatestr_to_funcstr('a is not None', keys, and_key_word='and'), 'lambda a: a is not None')
+        self.assertEqual(predicatestr_to_funcstr('a==1 or a==2', keys, and_key_word='and'), 'lambda a: a==1 or a==2')
+        self.assertTrue(predicatestr_to_funcstr('a==1 and b==2', keys, and_key_word='and') in ['lambda a, b: a==1 and b==2', 'lambda b, a: a==1 and b==2'])
+        self.assertEqual(predicatestr_to_funcstr('2<a<5', keys, and_key_word='and'), 'lambda a: 2<a<5')
+        self.assertEqual(predicatestr_to_funcstr('2<=a<=5', keys, and_key_word='and'), 'lambda a: 2<=a<=5')
+        self.assertTrue(predicatestr_to_funcstr('a or b', keys, and_key_word='and') in ['lambda a, b: a or b', 'lambda b, a: a or b'])
+        self.assertTrue(predicatestr_to_funcstr('a | b', keys, and_key_word='&') in ['lambda a, b: a | b', 'lambda b, a: a | b'])
+        self.assertEqual(predicatestr_to_funcstr('not not a', keys, and_key_word='and'), 'lambda a: not not a')
+        self.assertTrue(predicatestr_to_funcstr('a%2, b==1', keys, and_key_word='and') in ['lambda a, b: (a%2) and (b==1)', 'lambda b, a: (a%2) and (b==1)'])
     def test_selectstr_to_funcstr(self):
         keys = ('a', 'b', 'c')
         self.assertEqual(selectarg_to_funcstr('a', keys), (
@@ -143,6 +145,9 @@ class TestQfromClass(unittest.TestCase):
     ## select_pn -> pass None values
     ## select_join -> map-op which gets joined directly
     ## select_join_pn
+    ## col_where
+    ## col_select
+    ## col_select_join
     ## (normalize)
     
     ## join
@@ -173,8 +178,8 @@ class TestQfromClass(unittest.TestCase):
     ## flatten_join_pn
     ## unique
     
-    ## agg
-    ## agg_pairs
+    ## col_agg
+    ## pair_agg
     ## any
     ## all
     ## min
@@ -755,7 +760,119 @@ class TestQfromClass(unittest.TestCase):
 
         self.assertEqual(q1.select_join_pn(lambda a,b:a+b, 'c'), q_result1)
         self.assertEqual(q2.select_join_pn(lambda a,b:a+b, 'c'), q_result2)
-    ## (normalize)
+    ## col_where
+    def test_col_where(self):
+        q1 = Qfrom({'a': [1, 2, 3, 4, 5], 'b': [5, 4, 3, 2, 1]})
+        q2 = Qfrom({'a': [0, 2, 3], 'b': [4, 0, 6]})
+        q3 = Qfrom({'a': [0, 2, 3], 'b': [4, 0, 6], 'c': [7, 8, 0]})
+        q4 = Qfrom({'a': ['a', 'ab', 'abc']})
+
+        q_result1 = Qfrom({'a': [1, 2], 'b': [5, 4]})
+        q_result2 = Qfrom({'a': [2, 3, 4], 'b': [4, 3, 2]})
+        q_result3 = Qfrom({'a': [2, 3], 'b': [0, 6]})
+        q_result4 = Qfrom({'a': [3], 'b': [6]})
+        q_result5 = Qfrom({'a': [2, 3], 'b': [0, 6], 'c': [8, 0]})
+        q_result6 = Qfrom({'a': ['ab']})
+
+        self.assertEqual(q1.where(lambda a: a<3), q_result1)
+        self.assertEqual(q1.where('a<3'), q_result1)
+        self.assertEqual(q1.where('(a<5) & (b<5)'), q_result2)
+        self.assertEqual(q1.where('a<5, b<5'), q_result2)
+        self.assertEqual(q1.where(('a<5', 'b<5')), q_result2)
+        self.assertEqual(q2.where(lambda a: a), q_result3)
+        self.assertEqual(q2.where('a', lambda x: x), q_result3)
+        self.assertEqual(q2.where(('a',), lambda x: x), q_result3)
+        self.assertEqual(q2.where('a'), q_result3)
+        self.assertEqual(q2.where(('a',)), q_result3)
+        #self.assertEqual(q2.where(lambda a,b: (a, b)), q_result4)
+        self.assertEqual(q2.where('a, b'), q_result4)
+        self.assertEqual(q2.where(('a', 'b')), q_result4)
+        self.assertEqual(q2.where(lambda a, b: a and b), q_result4)
+        self.assertEqual(q3.where('a, b | c'), q_result5)
+        self.assertEqual(q3.where(('a', 'b | c')), q_result5)
+        self.assertEqual(q4.where(lambda a: a=='ab'), q_result6)
+        self.assertEqual(q4.where("a=='ab'"), q_result6)
+    ## col_select
+    def test_col_select(self):
+        q1 = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6], 'c': [7, 8, 9]})
+        q_result1 = Qfrom({'a': [1, 2, 3]})
+        q_result2 = Qfrom({'a': [1, 2, 3], 'c': [7, 8, 9]})
+        q_result3 = Qfrom({'a': [1, 2, 3], 'd': [4, 5, 6]})
+        q_result4 = Qfrom({'b': [4, 5, 6], 'a': [1, 2, 3]})
+        q_result5 = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+        q_result6 = Qfrom({'i': [0, 1, 2]})
+        q_result7 = Qfrom({'i': [0, 1, 2], 'a': [1, 2, 3]})
+
+        self.assertEqual(q1.col_select('a'), q_result1)
+        self.assertEqual(q1.col_select(('a',)), q_result1)
+        self.assertEqual(q1.col_select('-b'), q_result2)
+        self.assertEqual(q1.col_select(('-b', )), q_result2)
+        self.assertEqual(q1.col_select('a, b as d'), q_result3)
+        self.assertEqual(q1.col_select(('a', 'b as d')), q_result3)
+        self.assertEqual(q1.col_select('b, a'), q_result4)
+        self.assertEqual(q1.col_select(('b', 'a')), q_result4)
+        self.assertEqual(q1.col_select(('a', 'b')), q_result5)
+        self.assertEqual(q1.col_select('i'), q_result6)
+        self.assertEqual(q1.col_select('i, a'), q_result7)
+        self.assertEqual(q1.col_select(('i', 'a')), q_result7)
+    def test_col_select_predicate(self):
+        q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+        q_result1 = Qfrom({0: [False, True, True]})
+        q_result2 = Qfrom({'p': [False, True, True]})
+        q_result3 = Qfrom({'p': [False, True, True], 'a': [1, 2, 3], 'b': [4, 5, 6]})
+
+        self.assertEqual(q.col_select('a>1'), q_result1)
+        self.assertEqual(q.col_select(('a>1',)), q_result1)
+        self.assertEqual(q.col_select('a>1 as p'), q_result2)
+        self.assertEqual(q.col_select(('a>1 as p',)), q_result2)
+        self.assertEqual(q.col_select(('a>1 as p', 'a', 'b')), q_result3)
+    def test_col_select_func(self):
+        q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+        q_result1 = Qfrom({0: [5, 7, 9]})
+        q_result2 = Qfrom({'c': [5, 7, 9]})
+        q_result3 = Qfrom({0: [1, 2, 3]})
+        q_result4 = Qfrom({0: [0, 1, 2]})
+        q_result5 = Qfrom({0: [0, 1, 2], 1: [1, 2, 3], 2: [4, 5, 6]})
+        q_result6 = Qfrom({'i': [0, 1, 2], 'a': [1, 2, 3], 'b': [4, 5, 6]})
+        q_result7 = Qfrom({'a1': [1, 2, 3], 'a2': [2, 3, 4]})
+
+        add_two_nums = lambda a,b: a+b
+
+        self.assertEqual(q.col_select(lambda a,b: a+b), q_result1)
+        #self.assertEqual(q.col_select('add_two_nums(a,b)'), q_result1)
+        self.assertEqual(q.col_select('a, b', lambda x,y: x+y), q_result1)
+        self.assertEqual(q.col_select(('a', 'b'), lambda x,y: x+y), q_result1)
+        self.assertEqual(q.col_select('a, b', lambda x,y: x+y, 'c'), q_result2)
+        self.assertEqual(q.col_select('a, b', lambda x,y: x+y, ('c',)), q_result2)
+        self.assertEqual(q.col_select(lambda a: a), q_result3)
+        self.assertEqual(q.col_select(lambda i: i), q_result4)
+        self.assertEqual(q.col_select(lambda i,a,b: (i,a,b)), q_result5)
+        self.assertEqual(q.col_select(lambda i,a,b: (i,a,b), ('i', 'a', 'b')), q_result6)
+        self.assertEqual(q.col_select(lambda i,a,b: (i,a,b), 'i, a, b'), q_result6)
+        self.assertEqual(q.col_select(lambda a: {'a1':a, 'a2':a+1}), q_result7)
+    ## col_select_join
+    def test_col_select_join(self):
+        q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+
+        q_result1 = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6], 0:[0, 1, 2]})
+        q_result2 = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6], 'i':[0, 1, 2]})
+        q_result3 = Qfrom({'b': [4, 5, 6], 'a': [7, 8, 9]})
+        q_result4 = Qfrom({'b': [4, 5, 6], 'a': [7, 8, 9], 'i':[0, 1, 2]})
+        q_result5 = Qfrom({'b': [4, 5, 6], 'a': [False, True, True]})
+
+        self.assertEqual(q.col_select_join(lambda i: i), q_result1)
+        self.assertEqual(q.col_select_join(lambda i: i, ('i',)), q_result2)
+        self.assertEqual(q.col_select_join(lambda i: i, 'i'), q_result2)
+        self.assertEqual(q.col_select_join('i'), q_result2)
+        self.assertEqual(q.col_select_join(('i',)), q_result2)
+        self.assertEqual(q.col_select_join(lambda a: a+6, ('a',)), q_result3)
+        self.assertEqual(q.col_select_join(lambda a: a+6, 'a'), q_result3)
+        self.assertEqual(q.col_select_join('a', lambda x: x+6, 'a'), q_result3)
+        self.assertEqual(q.col_select_join(('a',), lambda x: x+6, 'a'), q_result3)
+        self.assertEqual(q.col_select_join(lambda a, i: (a+6, i), ('a', 'i')), q_result4)
+        self.assertEqual(q.col_select_join(lambda a, i: (a+6, i), 'a, i'), q_result4)
+        self.assertEqual(q.col_select_join('a>1 as a'), q_result5)
+    # ## (normalize)
     
     ## join
     def test_join(self):
@@ -1065,36 +1182,36 @@ class TestQfromClass(unittest.TestCase):
         self.assertEqual(q.unique('a,b', lambda x,y: x+y), q_result2)
 
     ## agg
-    def test_agg(self):
+    def test_col_agg(self):
         q1 = Qfrom({'a': [1, 2, 3], 'b': [5, 6, 7]})
-        self.assertEqual(q1.agg('sum(a), sum(b)'), (6, 18))
-        self.assertEqual(q1.agg('a.sum(), b.sum()'), (6, 18))
-        self.assertEqual(q1.agg(lambda a,b: (sum(a), sum(b))), (6, 18))
-        self.assertEqual(q1.agg(lambda a,b: {'a': sum(a), 'b':sum(b)}), {'a':6, 'b':18})
-        self.assertEqual(q1.agg(('a', 'b'), lambda x,y: (sum(x), sum(y))), (6, 18))
-        self.assertEqual(q1.agg('min(a), max(b)'), (1, 7))
-        self.assertEqual(q1.agg('a.min(), b.max()'), (1, 7))
-        #self.assertEqual(q1.agg('a.mean(), b.median()'), (2, 6))
-        self.assertEqual(q1.agg('max(a), min(a), sum(a), max(b), min(b), sum(b)'), (3, 1, 6, 7, 5, 18))
+        self.assertEqual(q1.col_agg('sum(a), sum(b)'), (6, 18))
+        self.assertEqual(q1.col_agg('a.sum(), b.sum()'), (6, 18))
+        self.assertEqual(q1.col_agg(lambda a,b: (sum(a), sum(b))), (6, 18))
+        self.assertEqual(q1.col_agg(lambda a,b: {'a': sum(a), 'b':sum(b)}), {'a':6, 'b':18})
+        self.assertEqual(q1.col_agg(('a', 'b'), lambda x,y: (sum(x), sum(y))), (6, 18))
+        self.assertEqual(q1.col_agg('min(a), max(b)'), (1, 7))
+        self.assertEqual(q1.col_agg('a.min(), b.max()'), (1, 7))
+        #self.assertEqual(q1.col_agg('a.mean(), b.median()'), (2, 6))
+        self.assertEqual(q1.col_agg('max(a), min(a), sum(a), max(b), min(b), sum(b)'), (3, 1, 6, 7, 5, 18))
 
-    ## agg_pairs
-    def test_agg_pairs(self):
+    ## pair_agg
+    def test_pair_agg(self):
         q1 = Qfrom({'a': [1, 2, 3], 'b': [5, 6, 7]})
         q2 = Qfrom({'a': ['a', 'b', 'c'], 'b': [5, 6, 7]})
 
-        self.assertEqual(q1.agg_pairs('a[0]+a[1]'), 6)
-        self.assertEqual(q1.agg_pairs(lambda a: a[0]+a[1]), 6)
-        self.assertEqual(q1.agg_pairs('a', lambda x: x[0]+x[1]), 6)
-        self.assertEqual(q1.agg_pairs(('a',), lambda x: x[0]+x[1]), 6)
-        self.assertEqual(q1.agg_pairs(lambda a, b: (a[0]+a[1], b[0]+b[1])), (6, 18))
-        self.assertEqual(q1.agg_pairs('a, b', lambda x, y: (x[0]+x[1], y[0]+y[1])), (6, 18))
-        self.assertEqual(q1.agg_pairs(('a', 'b'), lambda x, y: (x[0]+x[1], y[0]+y[1])), (6, 18))
-        self.assertEqual(q1.agg_pairs('a[0]+a[1], b[0]+b[1]'), (6, 18))
-        self.assertEqual(q1.agg_pairs('sum(a), sum(b)'), (6, 18))
-        self.assertEqual(q1.agg_pairs('min(a), max(b)'), (1, 7))
-        #self.assertEqual(q1.agg_pairs('mean(a), median(b)'), (2, 6))
-        #self.assertEqual(q1.agg_pairs('max(a), min(a), sum(a), max(b), min(b), sum(b)'), (3, 1, 6, 7, 5, 18))
-        self.assertEqual(q2.agg_pairs(lambda a: a[0]+a[1]), 'abc')
+        self.assertEqual(q1.pair_agg('a[0]+a[1]'), 6)
+        self.assertEqual(q1.pair_agg(lambda a: a[0]+a[1]), 6)
+        self.assertEqual(q1.pair_agg('a', lambda x: x[0]+x[1]), 6)
+        self.assertEqual(q1.pair_agg(('a',), lambda x: x[0]+x[1]), 6)
+        self.assertEqual(q1.pair_agg(lambda a, b: (a[0]+a[1], b[0]+b[1])), (6, 18))
+        self.assertEqual(q1.pair_agg('a, b', lambda x, y: (x[0]+x[1], y[0]+y[1])), (6, 18))
+        self.assertEqual(q1.pair_agg(('a', 'b'), lambda x, y: (x[0]+x[1], y[0]+y[1])), (6, 18))
+        self.assertEqual(q1.pair_agg('a[0]+a[1], b[0]+b[1]'), (6, 18))
+        self.assertEqual(q1.pair_agg('sum(a), sum(b)'), (6, 18))
+        self.assertEqual(q1.pair_agg('min(a), max(b)'), (1, 7))
+        #self.assertEqual(q1.pair_agg('mean(a), median(b)'), (2, 6))
+        #self.assertEqual(q1.pair_agg('max(a), min(a), sum(a), max(b), min(b), sum(b)'), (3, 1, 6, 7, 5, 18))
+        self.assertEqual(q2.pair_agg(lambda a: a[0]+a[1]), 'abc')
     ## any
     '''def test_any(self):
         q1 = Qfrom({'a': [1, 2, 3], 'b': [5, 6, 7]})

@@ -102,7 +102,7 @@ def get_used_vars_from_func_str(predicate_str, keys):
         return set(filter_by_keys)
 
     raise SyntaxError(predicate_str + ' cant be interpreted as a function')
-def predicatestr_to_funcstr(predicate_str, keys):
+def predicatestr_to_funcstr(predicate_str, keys, and_key_word):
     column_list = split_func_str_coma(predicate_str) if type(predicate_str) is str else predicate_str
     used_vars = set([var for col in column_list for var in get_used_vars_from_func_str(col, keys)])
     args_str = ", ".join(set(used_vars))
@@ -110,7 +110,8 @@ def predicatestr_to_funcstr(predicate_str, keys):
     if len(column_list) == 1:
         func_body_str = column_list[0]
     else:
-        func_body_str = ') and ('.join(column_list)
+        #func_body_str = ') and ('.join(column_list)
+        func_body_str = f') {and_key_word} ('.join(column_list)
         func_body_str = f'({func_body_str})'
     return f'lambda {args_str}: {func_body_str}'
 
@@ -197,26 +198,26 @@ def trans_select_func_args(args, keys):
         select_join_func_col_names,
         select_func,
     )
-def trans_predicate_func(func, keys):
+def trans_predicate_func(func, keys, and_key_word):
     if func is None:
         raise SyntaxError(str(func) + ' cant be interpreted as a function')
     if callable(func):
         return func
     if type(func) in [str, tuple, list]:
-        translated_func_str = predicatestr_to_funcstr(func, keys)
+        translated_func_str = predicatestr_to_funcstr(func, keys, and_key_word)
         #print(f'{func} -> {translated_func_str}')
         return eval(translated_func_str)
 
     raise SyntaxError(str(func) + ' cant be interpreted as a function')
-def trans_predicate_func_args(args, keys):
+def trans_predicate_func_args(args, keys, and_key_word):
     selected_col_names = None
     predicate_func = None
 
     if len(args) == 2:
         selected_col_names = [col.strip() for col in args[0].split(',')] if type(args[0]) is str else args[0]
-        predicate_func = trans_predicate_func(args[1], keys)
+        predicate_func = trans_predicate_func(args[1], keys, and_key_word)
     elif len(args) == 1:
-        predicate_func = trans_predicate_func(args[0], keys)
+        predicate_func = trans_predicate_func(args[0], keys, and_key_word)
 
     return selected_col_names, predicate_func
 
@@ -454,14 +455,13 @@ def list_to_array(l):
         return np.array(l)
     
     
-def iter_table_dict(table_dict):
-    return (
-        tuple(col[i] for col in table_dict.values())\
-            if len(table_dict.keys()) > 1\
-            else\
-                first(table_dict.values())[i]\
-        for i in range(len(first(table_dict.values())))\
-    )
+def iter_table_dict(table_dict: dict):
+    if len(table_dict) == 0:
+        return None
+    if len(table_dict) == 1:
+        return iter(first(table_dict.values()))
+    else:
+        return zip(*table_dict.values())
 
 def arr_set_value(arr: np.array, key: int, value):
     value_type = np.array([value]).dtype
@@ -485,7 +485,7 @@ def get_func_output_col_count(table_dict, func, do_pass_none=False):
         output_col_count = len(output_first_row)
     return output_col_count
 def get_func_args(table_dict, func):
-    func_type = type(func)
+    #func_type = type(func)
     var_names = func.__code__.co_varnames
     #if 'i' in var_names and 'i' not in result_dict.keys():
     #    pass
@@ -724,7 +724,40 @@ def flattenjoin_table_dict(table_dict, collection_list, new_col_names):
             join_dict = {0:result_array}
     
     return {**expanded_dict, **join_dict}
+def col_where_table_dict(table_dict, selected_col_names, func):
+    args = tuple(table_dict[col] for col in selected_col_names) if selected_col_names else get_func_args(table_dict, func)
+    where_filter = func(*args)
+    #where_filter = where_filter.astype('bool')
+    result = {col_name:col[where_filter] for col_name, col in table_dict.items()}
+    return result
+def col_map_table_dict(table_dict, selected_col_names, func, out_col_names=None):
+    if not any(table_dict):
+        return table_dict
+    
+    args = tuple(table_dict[col] for col in selected_col_names) if selected_col_names else get_func_args(table_dict, func)
+    #print(f'{args=}')
+    #output_col_count = get_func_output_col_count(table_dict, func, do_pass_none)
 
+    result_array = func(*args)
+    #print(f'{out_col_names=}, {result_array=}')
+
+    if out_col_names\
+        and isinstance(result_array, np.ndarray):
+        return {out_col_names[0]: result_array}
+    if not out_col_names\
+        and isinstance(result_array, np.ndarray):
+        return {0: result_array}
+    elif out_col_names\
+        and isinstance(result_array, tuple)\
+        and len(out_col_names) == len(result_array):
+        return {out_col_names[i]: col for i, col in enumerate(result_array)}
+    elif not out_col_names\
+        and isinstance(result_array, tuple):
+        return {i:col for i, col in enumerate(result_array)}
+    elif isinstance(result_array, dict):
+        return result_array
+    else:
+        raise ValueError(f"can't handle return type: {type(result_array)}")
 
 def calc_operations(table_dict, operation_list):
     result_dict = table_dict
@@ -856,7 +889,8 @@ def calc_operations(table_dict, operation_list):
                     if select_join_func:
                         key_dict = {**result_dict, **map_table_dict(result_dict, selected_col_names, select_join_func, pass_none, select_join_func_col_names)}
                     key_dict = select_key_func(key_dict)
-                key_list = list(iter_table_dict(key_dict))
+                #key_list = list(iter_table_dict(key_dict))
+                key_list = iter_table_dict(key_dict)
                 result_dict = group_by_table_dict(result_dict, key_list, select_func)
                 continue
             case Operation.FLATTEN:
@@ -901,6 +935,49 @@ def calc_operations(table_dict, operation_list):
                 key_list = list(iter_table_dict(key_dict))
                 result_dict = flattenjoin_table_dict(result_dict, key_list, new_col_names)
                 continue
+            case Operation.COLWHERE:
+                if len(result_dict) == 0:
+                    continue
+                selected_col_names = op['selected_col_names']
+                func = op['func']
+                result_dict = col_where_table_dict(result_dict, selected_col_names, func)
+                continue
+            case Operation.COLSELECT:
+                if len(result_dict) == 0:
+                    continue
+                selected_col_names = op['selected_col_names']
+                map_func = op['map_func']
+                new_col_names = op['new_col_names']
+                select_join_func = op['select_join_func']
+                select_join_func_col_names = op['select_join_func_col_names']
+                select_func = op['select_func']
+
+                if map_func:
+                    result_dict = col_map_table_dict(result_dict, selected_col_names, map_func, new_col_names)
+                else:
+                    if select_join_func:
+                        result_dict = {**result_dict, **col_map_table_dict(result_dict, selected_col_names, select_join_func, select_join_func_col_names)}
+                    #print(f'{result_dict=}')
+                    result_dict = select_func(result_dict)
+                continue
+            case Operation.COLSELECTJOIN:
+                if len(result_dict) == 0:
+                    continue
+                selected_col_names = op['selected_col_names']
+                map_func = op['map_func']
+                new_col_names = op['new_col_names']
+                select_join_func = op['select_join_func']
+                select_join_func_col_names = op['select_join_func_col_names']
+                select_func = op['select_func']
+
+                if map_func:
+                    result_dict = {**result_dict, **col_map_table_dict(result_dict, selected_col_names, map_func, new_col_names)}
+                else:
+                    if select_join_func:
+                        result_dict = {**result_dict, **col_map_table_dict(result_dict, selected_col_names, select_join_func, select_join_func_col_names)}
+                    result_dict = {**result_dict, **select_func(result_dict)}
+                continue
+
     
     return result_dict
 
@@ -919,6 +996,9 @@ class Operation(enum.Enum):
     GROUPBY         = 11
     FLATTEN         = 12
     FLATTENJOIN     = 13
+    COLWHERE        = 14
+    COLSELECT       = 15
+    COLSELECTJOIN   = 16
 
 class Qfrom():
     def __init__(self, collection=None, operation_list=[]) -> None:
@@ -959,16 +1039,16 @@ class Qfrom():
             self.calculate()
         
         if len(args) == 1:
-            key = args[0]
-            if isinstance(key, int) or np.issubdtype(type(key), np.integer):
-                return tuple(col[key] for col in self.table_dict.values()) if len(list(self.table_dict.values())) != 1 else first(self.table_dict.values())[key]
+            #key = args[0]
+            if isinstance(args[0], int) or np.issubdtype(type(args[0]), np.integer):
+                return tuple(col[args[0]] for col in self.table_dict.values()) if len(list(self.table_dict.values())) != 1 else first(self.table_dict.values())[args[0]]
             
-            if isinstance(key, slice):
-                result = {col_name: col[key] for col_name, col in self.table_dict.items()}
+            if isinstance(args[0], slice):
+                result = {col_name: col[args[0]] for col_name, col in self.table_dict.items()}
                 return Qfrom(result)
         
-            if isinstance(key, tuple) and len(key) == 2 and type(key[0]) is str and type(key[1]) is int:
-                return self.table_dict[key[0]][key[1]]
+            if isinstance(args[0], tuple) and len(args[0]) == 2 and type(args[0][0]) is str and type(args[0][1]) is int:
+                return self.table_dict[args[0][0]][args[0][1]]
             
             #print(f'{type(key) = }')
         
@@ -1025,15 +1105,7 @@ class Qfrom():
 
     def __iter__(self):
         self.calculate()
-        if len(self.table_dict) == 0:
-            return None
-        return (
-            tuple(col[i] for col in self.table_dict.values())\
-                if len(self.table_dict.keys()) > 1\
-                else\
-                    first(self.table_dict.values())[i]\
-            for i in range(len(first(self.table_dict.values())))
-        )
+        return iter_table_dict(self.table_dict)
     
     def append(self, item):
         operation = {
@@ -1149,7 +1221,7 @@ class Qfrom():
 
     def first(self, *args):
         if len(args) > 0:
-            selected_col_names, mod_predicate = trans_predicate_func_args(args, keys=self.columns())
+            selected_col_names, mod_predicate = trans_predicate_func_args(args, keys=self.columns(), and_key_word='and')
             var_names = mod_predicate.__code__.co_varnames
             col_id_dict = {col:i for i, col in enumerate(self.columns())}
             predicate_func = None
@@ -1165,7 +1237,7 @@ class Qfrom():
         return tuple(self.table_dict.keys())
 
     def where(self, *args):
-        selected_col_names, where_predicate = trans_predicate_func_args(args, keys=self.columns())
+        selected_col_names, where_predicate = trans_predicate_func_args(args, keys=self.columns(), and_key_word='and')
 
         operation = {
             'Operation': Operation.WHERE,
@@ -1252,6 +1324,63 @@ class Qfrom():
             operation_list=self.__operation_list+[operation])
     def select_join_pn(self, *args):
         return self.select_join(*args, pass_none=True)
+
+    def col_where(self, *args):
+        selected_col_names, where_predicate = trans_predicate_func_args(args, keys=self.columns(), and_key_word='&')
+
+        operation = {
+            'Operation': Operation.COLWHERE,
+            'selected_col_names': selected_col_names,
+            'func': where_predicate,
+            #'invert': False,
+        }
+        return Qfrom(
+            self.table_dict,
+            operation_list=self.__operation_list+[operation])
+    def col_select(self, *args):
+        #print(f'select() -> {args=}, {pass_none=}')
+        selected_col_names,\
+        map_func,\
+        new_col_names,\
+        select_join_func,\
+        select_join_func_col_names,\
+        select_func\
+            = trans_select_func_args(args, keys=self.columns())
+
+        operation = {
+            'Operation': Operation.COLSELECT,
+            'selected_col_names': selected_col_names,
+            'map_func': map_func,
+            'new_col_names': new_col_names,
+            'select_join_func': select_join_func,
+            'select_join_func_col_names': select_join_func_col_names,
+            'select_func': select_func,
+        }
+        return Qfrom(
+            self.table_dict,
+            operation_list=self.__operation_list+[operation])
+    def col_select_join(self, *args):
+        #print(f'select() -> {args=}, {pass_none=}')
+        selected_col_names,\
+        map_func,\
+        new_col_names,\
+        select_join_func,\
+        select_join_func_col_names,\
+        select_func\
+            = trans_select_func_args(args, keys=self.columns())
+
+        operation = {
+            'Operation': Operation.COLSELECTJOIN,
+            'selected_col_names': selected_col_names,
+            'map_func': map_func,
+            'new_col_names': new_col_names,
+            'select_join_func': select_join_func,
+            'select_join_func_col_names': select_join_func_col_names,
+            'select_func': select_func,
+        }
+        return Qfrom(
+            self.table_dict,
+            operation_list=self.__operation_list+[operation])
 
     def shuffle(self):
         self.calculate()
@@ -1392,7 +1521,7 @@ class Qfrom():
             .groupby(*args, pass_none=pass_none)\
             .select(lambda group:group[0], self.columns(), pass_none=pass_none)
 
-    def agg(self, *args):
+    def col_agg(self, *args):
         self.calculate()
 
         selected_col_names,\
@@ -1406,7 +1535,7 @@ class Qfrom():
 
         return map_func(*args)
         
-    def agg_pairs(self, *args):
+    def pair_agg(self, *args):
         self.calculate()
 
         if len(self) == 0:
@@ -1446,6 +1575,17 @@ class Qfrom():
         self.calculate()
 
         q_filtered = self.where(predicate) if predicate else self
+        q_filtered.calculate()
+
+        if len(q_filtered.table_dict) == 0:
+            return False
+        if  len(list(q_filtered.table_dict.values())[0]) == 0:
+            return False
+        return True
+    def col_any(self, predicate=None):
+        self.calculate()
+
+        q_filtered = self.col_where(predicate) if predicate else self
         q_filtered.calculate()
 
         if len(q_filtered.table_dict) == 0:
