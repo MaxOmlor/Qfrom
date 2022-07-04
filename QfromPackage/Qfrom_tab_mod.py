@@ -21,6 +21,7 @@ from io import StringIO
 import keyword
 import builtins
 import typing
+#import tensorflow as tf
 
 
 
@@ -95,7 +96,6 @@ def get_used_vars_from_func_str(predicate_str, keys):
             'print', 'type',
             'for', 'if', 'while'
         ]'''
-        #print('global funcs = ', [key for key, f in globals().items() if callable(f)])
         py_keywords = keyword.kwlist + dir(builtins) + [key for key, f in globals().items() if callable(f)] + dir()
         word_list_no_bool_ops = [word for word in word_list if word not in py_keywords]
         word_list_no_values = [word for word in word_list_no_bool_ops if word not in ['None'] and re.search('^[0-9]+$', word) is None]
@@ -351,7 +351,7 @@ def parse_iterable_to_array(iterable):
     global HANDLE_COLLECTION_SPECIALCLASSES
     iter_type = type(iterable)
     if iter_type is np.ndarray:
-        return iterable
+        return np.copy(iterable)
 
     if iter_type in HANDLE_COLLECTION_SPECIALCLASSES:
         raise NotImplementedError('not implemented')
@@ -369,7 +369,7 @@ def parse_iterables_to_arrays(table_dict):
         raise NotImplementedError('not implemented')
 
     if table_dict_type is Qfrom:
-        return table_dict.table_dict
+        return {key: np.copy(col) for key, col in table_dict.table_dict}
     if table_dict_type is dict:
         return {col_name: parse_iterable_to_array(col) for col_name, col in table_dict.items()}
     raise ValueError(f'Parameter "table_dict" is no dict or Qfrom_tab. {table_dict=}')
@@ -532,7 +532,6 @@ def map_table_dict(table_dict, selected_col_names, func, do_pass_none, out_col_n
         return table_dict
     
     args = tuple(table_dict[col] for col in selected_col_names) if selected_col_names else get_func_args(table_dict, func)
-    #print(f'{args=}')
     output_col_count = get_func_output_col_count(table_dict, func, do_pass_none)
 
     result_array = None
@@ -737,11 +736,9 @@ def col_map_table_dict(table_dict, selected_col_names, func, out_col_names=None)
         return table_dict
     
     args = tuple(table_dict[col] for col in selected_col_names) if selected_col_names else get_func_args(table_dict, func)
-    #print(f'{args=}')
     #output_col_count = get_func_output_col_count(table_dict, func, do_pass_none)
 
     result_array = func(*args)
-    #print(f'{out_col_names=}, {result_array=}')
 
     if out_col_names\
         and isinstance(result_array, np.ndarray):
@@ -959,7 +956,6 @@ def calc_operations(table_dict, operation_list):
                 else:
                     if select_join_func:
                         result_dict = {**result_dict, **col_map_table_dict(result_dict, selected_col_names, select_join_func, select_join_func_col_names)}
-                    #print(f'{result_dict=}')
                     result_dict = select_func(result_dict)
                 continue
             case Operation.COLSELECTJOIN:
@@ -1228,7 +1224,8 @@ class Qfrom():
     def col_select_join(self, columns: tuple[str], map_func: typing.Callable, output_columns: str) -> Qfrom: ...
     @overload
     def col_select_join(self, columns: tuple[str], map_func: typing.Callable, output_columns: tuple[str]) -> Qfrom: ...
-    ## (normalize)
+    ## normalize
+    ## normalize_join
     
     ## join
     ## join_cross
@@ -1297,7 +1294,9 @@ class Qfrom():
     ## __array__
 
 
-    def __init__(self, collection=None, operation_list=[]) -> Qfrom:
+    def __init__(self, collection=None, operation_list=None) -> Qfrom:
+        operation_list = operation_list if operation_list else []
+
         self.table_dict = dict()
         if isinstance(collection, str):
             self.table_dict = parse_iterables_to_arrays(parse_str_to_collection(collection))
@@ -1307,10 +1306,12 @@ class Qfrom():
             collection.calculate()
             self.table_dict = {key:np.copy(value) for key, value in collection.table_dict.items()}
         elif isinstance(collection, np.ndarray) and len(collection.shape) == 1:
-            self.table_dict = {0: collection}
+            self.table_dict = {0: np.copy(collection)}
         elif isinstance(collection, np.ndarray) and len(collection.shape) > 1:
             collection_rot = np.rot90(collection)
             self.table_dict = {i:col for i, col in enumerate(collection_rot[::-1])}
+        elif isinstance(collection, pd.DataFrame):
+            raise NotImplementedError()
         elif isinstance(collection, Iterable):
             collection_list = list(collection)
             if len(collection_list) > 0:
@@ -1335,7 +1336,6 @@ class Qfrom():
         return len(self)
 
     def __getitem__(self, *args):
-        #print(f'__getitem__() -> {self.table_dict=}, {self.__operation_list=}, {args=}')
         if any(self.__operation_list):
             self.calculate()
         
@@ -1351,11 +1351,9 @@ class Qfrom():
             if isinstance(args[0], tuple) and len(args[0]) == 2 and type(args[0][0]) is str and type(args[0][1]) is int:
                 return self.table_dict[args[0][0]][args[0][1]]
             
-            #print(f'{type(key) = }')
         
         #if len(args[0]) > 0:
         #    return self.select(*args[0])
-        #print(f'{args=}')
         return self.select(*args)
     
     def __setitem__(self, key, newvalue):
@@ -1408,14 +1406,13 @@ class Qfrom():
         self.calculate()
         return iter_table_dict(self.table_dict)
     
-    def append(self, item: Any|tuple|dict) -> Qfrom:
+    def append(self, item: Any|tuple|dict) -> None:
         operation = {
             'Operation': Operation.APPEND,
             'item': item
         }
-        return Qfrom(
-            self.table_dict,
-            operation_list=self.__operation_list+[operation])
+        self.__operation_list.append(operation)
+        #self.__operation_list += [operation]
 
     def copy(self) -> Qfrom:
         #self.calculate()
@@ -1577,7 +1574,6 @@ class Qfrom():
         return result'''
 
     def select(self, *args, pass_none=False) -> Qfrom:
-        #print(f'select() -> {args=}, {pass_none=}')
         selected_col_names,\
         map_func,\
         new_col_names,\
@@ -1639,7 +1635,6 @@ class Qfrom():
             self.table_dict,
             operation_list=self.__operation_list+[operation])
     def col_select(self, *args) -> Qfrom:
-        #print(f'select() -> {args=}, {pass_none=}')
         selected_col_names,\
         map_func,\
         new_col_names,\
@@ -1661,7 +1656,6 @@ class Qfrom():
             self.table_dict,
             operation_list=self.__operation_list+[operation])
     def col_select_join(self, *args) -> Qfrom:
-        #print(f'select() -> {args=}, {pass_none=}')
         selected_col_names,\
         map_func,\
         new_col_names,\
@@ -1993,7 +1987,6 @@ class Qfrom():
     #-- special func --------------------------------------------#
     def calculate(self) -> dict[str, np.ndarray]:
         if any(self.__operation_list):
-            #print(f'calculate() -> {self.__operation_list=}')
             self.table_dict = calc_operations(dict(self.table_dict), self.__operation_list)
             self.__operation_list = []
         return self.table_dict

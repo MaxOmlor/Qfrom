@@ -148,7 +148,8 @@ class TestQfromClass(unittest.TestCase):
     ## col_where
     ## col_select
     ## col_select_join
-    ## (normalize)
+    ## normalize
+    ## normalize_join
     
     ## join
     ## join_cross
@@ -180,6 +181,7 @@ class TestQfromClass(unittest.TestCase):
     
     ## col_agg
     ## pair_agg
+    ## value_counts
     ## any
     ## all
     ## min
@@ -342,8 +344,14 @@ class TestQfromClass(unittest.TestCase):
         q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
         q_result = Qfrom({'a': [1, 2, 3, 7], 'b': [4, 5, 6, 8]})
 
-        self.assertEqual(q.append((7, 8)), q_result)
-        self.assertEqual(q.append({'a': 7, 'b':8}), q_result)
+        q1 = q.copy()
+        q1.append((7, 8))
+
+        q2 = q.copy()
+        q2.append({'a': 7, 'b':8})
+
+        self.assertEqual(q1, q_result)
+        self.assertEqual(q2, q_result)
     ## setitem
     def test_setitem(self):
         q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
@@ -872,7 +880,43 @@ class TestQfromClass(unittest.TestCase):
         self.assertEqual(q.col_select_join(lambda a, i: (a+6, i), ('a', 'i')), q_result4)
         self.assertEqual(q.col_select_join(lambda a, i: (a+6, i), 'a, i'), q_result4)
         self.assertEqual(q.col_select_join('a>1 as a'), q_result5)
-    # ## (normalize)
+    ## normalize
+    '''def test_normalize(self):
+        q = Qfrom({'a': [1, 2, 3, 4], 'b': [4, 6, 8]})
+
+        q_result1 = Qfrom({'a': [.25, .5, .75, 1], 'b': [.5, .75, 1]})
+        q_result2 = Qfrom({'a': [.25, .5, .75, 1]})
+        q_result3 = Qfrom({'b': [.5, .75, 1]})
+        q_result4 = Qfrom({'a': [-.5, 0, .5, 1]})
+        q_result5 = Qfrom({'b': [-1, 0, 1]})
+
+        self.assertEqual(q.normalize(), q_result1)
+        self.assertEqual(q.normalize('a, b'), q_result1)
+        self.assertEqual(q.normalize(('a', 'b')), q_result1)
+        self.assertEqual(q.normalize('a'), q_result2)
+        self.assertEqual(q.normalize('b'), q_result3)
+        self.assertEqual(q.normalize('a', origin=2), q_result4)
+        self.assertEqual(q.normalize('b', origin='mean'), q_result5)
+        self.assertEqual(q.normalize('b', origin='median'), q_result5)'''
+    ## normalize_join
+    '''def test_normalize_join(self):
+        q = Qfrom({'a': [1, 2, 3, 4], 'b': [4, 6, 8]})
+
+        q_result1 = Qfrom({'a': [.25, .5, .75, 1], 'b': [.5, .75, 1]})
+        q_result2 = Qfrom({'a': [.25, .5, .75, 1], 'b': [4, 6, 8]})
+        q_result3 = Qfrom({'a': [1, 2, 3, 4], 'b': [.5, .75, 1]})
+        q_result4 = Qfrom({'a': [-.5, 0, .5, 1], 'b': [4, 6, 8]})
+        q_result5 = Qfrom({'a': [1, 2, 3, 4], 'b': [-1, 0, 1]})
+
+        self.assertEqual(q.normalize_join(), q_result1)
+        self.assertEqual(q.normalize_join('a, b'), q_result1)
+        self.assertEqual(q.normalize_join(('a', 'b')), q_result1)
+        self.assertEqual(q.normalize_join('a'), q_result2)
+        self.assertEqual(q.normalize_join('b'), q_result3)
+        self.assertEqual(q.normalize_join('a', origin=2), q_result4)
+        self.assertEqual(q.normalize_join('b', origin='mean'), q_result5)
+        self.assertEqual(q.normalize_join('b', origin='median'), q_result5)'''
+
     
     ## join
     def test_join(self):
@@ -1181,7 +1225,7 @@ class TestQfromClass(unittest.TestCase):
         self.assertEqual(q.unique(lambda a,b: a+b), q_result2)
         self.assertEqual(q.unique('a,b', lambda x,y: x+y), q_result2)
 
-    ## agg
+    ## col_agg
     def test_col_agg(self):
         q1 = Qfrom({'a': [1, 2, 3], 'b': [5, 6, 7]})
         self.assertEqual(q1.col_agg('sum(a), sum(b)'), (6, 18))
@@ -1212,6 +1256,7 @@ class TestQfromClass(unittest.TestCase):
         #self.assertEqual(q1.pair_agg('mean(a), median(b)'), (2, 6))
         #self.assertEqual(q1.pair_agg('max(a), min(a), sum(a), max(b), min(b), sum(b)'), (3, 1, 6, 7, 5, 18))
         self.assertEqual(q2.pair_agg(lambda a: a[0]+a[1]), 'abc')
+    ## value_counts
     ## any
     '''def test_any(self):
         q1 = Qfrom({'a': [1, 2, 3], 'b': [5, 6, 7]})
@@ -1382,8 +1427,9 @@ class TestQfromClass(unittest.TestCase):
     def test_todict(self):
         d = {'a': np.array([1, 2, 3]), 'b': np.array([4, 5, 6])}
         q = Qfrom(d)
+        print(f'{d=}, {q=}')
 
-        self.assertEqual(q.todict(), d)
+        self.assertTrue(all(key1==key2 and np.array_equal(col1, col2) for (key1, col1), (key2, col2) in zip(q.todict().items(), d.items())))
     ## toarray
     def test_toarray(self):
         q1 = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
