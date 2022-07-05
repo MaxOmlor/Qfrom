@@ -167,7 +167,7 @@ def trans_select_func(func, keys):
         return (None, None, None, func)
     if type(func) in [str, tuple, list, np.str_]:
         select_join_func_str, select_join_func_col_names, select_func_str = selectarg_to_funcstr(func, keys)
-        #print(f'{func} -> {select_join_func_str}, {select_join_func_col_names}, {select_func_str}')
+        #print(f'{func=} ->\n\t{select_join_func_str = },\n\t{select_join_func_col_names = },\n\t{select_func_str = }')
         return (eval(select_join_func_str) if select_join_func_str else None, select_join_func_col_names, eval(select_func_str), None)
 
     raise SyntaxError(str(func) + ' cant be interpreted as a function')
@@ -189,8 +189,12 @@ def trans_select_func_args(args, keys):
     elif len(args) == 2 and callable(args[0]):
         map_func, new_col_names = args
         new_col_names = [name.strip() for name in new_col_names.split(',')] if type(new_col_names) is str else new_col_names
+    elif len(args) == 2:
+        selected_col_names = [col.strip() for col in args[0].split(',')] if type(args[0]) is str else args[0]
+        new_col_names = [name.strip() for name in args[1].split(',')] if type(args[1]) is str else args[1]
     elif len(args) == 1:
         select_join_func, select_join_func_col_names, select_func, map_func = trans_select_func(args[0], keys)
+        #print(f'{args[0]=},\n{select_join_func=},\n{select_join_func_col_names=},\n{select_func=},\n{map_func=}')
 
     return (
         selected_col_names,
@@ -223,9 +227,6 @@ def trans_predicate_func_args(args, keys, and_key_word):
 
     return selected_col_names, predicate_func
 
-#def trans_normalize_func_args(args, keys):
-
-
 def trans_groupby_func_args(args, keys):
     selected_col_names = None
     map_func = None
@@ -254,6 +255,8 @@ def trans_groupby_func_args(args, keys):
         select_func = trans_select_func(new_col_names, keys)[2]
     elif len(args) == 1:
         select_join_func, select_join_func_col_names, select_key_func, map_func = trans_select_func(args[0], keys)
+    else:
+        raise ValueError('cant identify argument pattern')
 
     return (
         selected_col_names,
@@ -533,6 +536,16 @@ def order_by_table_dict(table_dict, key_dict, reverse, select_func):
 def map_table_dict(table_dict, selected_col_names, func, do_pass_none, out_col_names=None):
     if not any(table_dict):
         return table_dict
+    if func is None\
+        and selected_col_names\
+        and out_col_names\
+        and len(selected_col_names) == len(out_col_names):
+        if len(selected_col_names) == 1:
+            func_str = f'lambda {selected_col_names[0]}: {selected_col_names[0]}'
+        else:
+            args_str = ', '.join(selected_col_names)
+            func_str = f'lambda {args_str}: ({args_str})'
+        func = eval(func_str)
     
     args = tuple(table_dict[col] for col in selected_col_names) if selected_col_names else get_func_args(table_dict, func)
     output_col_count = get_func_output_col_count(table_dict, func, do_pass_none)
@@ -760,6 +773,31 @@ def col_map_table_dict(table_dict, selected_col_names, func, out_col_names=None)
         return result_array
     else:
         raise ValueError(f"can't handle return type: {type(result_array)}")
+def normalize_table_dict(table_dict: dict[str, np.ndarray], origin, pass_none):
+    if pass_none:
+        raise NotImplementedError('pass_none is not implemented yet')
+    if origin is None:
+        origin = tuple(0 for key in table_dict.keys())
+    if len(table_dict) == 1 and type(origin) is not tuple:
+        origin = (origin,)
+    if type(origin) is dict:
+        origin = tuple(origin[key] for key in table_dict.keys())
+    if type(origin) is not tuple or len(origin) != len(table_dict):
+        raise ValueError('origin has a wrong format')
+
+    def get_col_sub(x, col):
+        if callable(x):
+            return x(col)
+        if type(x) is str:
+            return eval(f'np.{x}')(col)
+        return x
+        #raise ValueError(f'origin must be a str or a callable. cant interpred origin: {x}')
+
+    col_subs = tuple(get_col_sub(x, col) for x, col in zip(origin, table_dict.values()))
+    centered_table_dict = {key: col if sub==0 else col-sub for sub, (key, col) in zip(col_subs, table_dict.items())}
+
+    max_values = tuple(np.absolute(col).max() for col in centered_table_dict.values())
+    return {key: col/max_value for max_value, (key, col) in zip(max_values, centered_table_dict.items())}
 
 def calc_operations(table_dict, operation_list):
     result_dict = table_dict
@@ -791,12 +829,12 @@ def calc_operations(table_dict, operation_list):
                 reverse = op['reverse']
 
                 key_dict = result_dict
-                if map_func:
-                    key_dict = map_table_dict(result_dict, selected_col_names, map_func, pass_none)
-                else:
+                if select_key_func:
                     if select_join_func:
                         key_dict = {**result_dict, **map_table_dict(result_dict, selected_col_names, select_join_func, pass_none, select_join_func_col_names)}
                     key_dict = select_key_func(key_dict)
+                else:
+                    key_dict = map_table_dict(result_dict, selected_col_names, map_func, pass_none)
                 result_dict = order_by_table_dict(result_dict, key_dict, reverse, select_func)
                 continue
             case Operation.WHERE:
@@ -818,12 +856,12 @@ def calc_operations(table_dict, operation_list):
                 select_func = op['select_func']
                 pass_none = op['pass_none']
 
-                if map_func:
-                    result_dict = map_table_dict(result_dict, selected_col_names, map_func, pass_none, new_col_names)
-                else:
+                if select_func:
                     if select_join_func:
                         result_dict = {**result_dict, **map_table_dict(result_dict, selected_col_names, select_join_func, pass_none, select_join_func_col_names)}
                     result_dict = select_func(result_dict)
+                else:
+                    result_dict = map_table_dict(result_dict, selected_col_names, map_func, pass_none, new_col_names)
                 continue
             case Operation.SELECTJOIN:
                 if len(result_dict) == 0:
@@ -836,12 +874,12 @@ def calc_operations(table_dict, operation_list):
                 select_func = op['select_func']
                 pass_none = op['pass_none']
 
-                if map_func:
-                    result_dict = {**result_dict, **map_table_dict(result_dict, selected_col_names, map_func, pass_none, new_col_names)}
-                else:
+                if select_func:
                     if select_join_func:
                         result_dict = {**result_dict, **map_table_dict(result_dict, selected_col_names, select_join_func, pass_none, select_join_func_col_names)}
                     result_dict = {**result_dict, **select_func(result_dict)}
+                else:
+                    result_dict = {**result_dict, **map_table_dict(result_dict, selected_col_names, map_func, pass_none, new_col_names)}
                 continue
             case Operation.JOIN:
                 if len(result_dict) == 0:
@@ -885,12 +923,12 @@ def calc_operations(table_dict, operation_list):
                 pass_none = op['pass_none']
 
                 key_dict = result_dict
-                if map_func:
-                    key_dict = map_table_dict(result_dict, selected_col_names, map_func, pass_none)
-                else:
+                if select_key_func:
                     if select_join_func:
                         key_dict = {**result_dict, **map_table_dict(result_dict, selected_col_names, select_join_func, pass_none, select_join_func_col_names)}
                     key_dict = select_key_func(key_dict)
+                else:
+                    key_dict = map_table_dict(result_dict, selected_col_names, map_func, pass_none)
                 #key_list = list(iter_table_dict(key_dict))
                 key_list = iter_table_dict(key_dict)
                 result_dict = group_by_table_dict(result_dict, key_list, select_func)
@@ -907,12 +945,12 @@ def calc_operations(table_dict, operation_list):
                 pass_none = op['pass_none']
 
                 key_dict = result_dict
-                if map_func:
-                    key_dict = map_table_dict(result_dict, selected_col_names, map_func, pass_none)
-                else:
+                if select_key_func:
                     if select_join_func:
                         key_dict = {**result_dict, **map_table_dict(result_dict, selected_col_names, select_join_func, pass_none, select_join_func_col_names)}
                     key_dict = select_key_func(key_dict)
+                else:
+                    key_dict = map_table_dict(result_dict, selected_col_names, map_func, pass_none)
                 key_list = list(iter_table_dict(key_dict))
                 result_dict = flatten_table_dict(key_list, new_col_names)
                 continue
@@ -928,12 +966,12 @@ def calc_operations(table_dict, operation_list):
                 pass_none = op['pass_none']
 
                 key_dict = result_dict
-                if map_func:
-                    key_dict = map_table_dict(result_dict, selected_col_names, map_func, pass_none)
-                else:
+                if select_key_func:
                     if select_join_func:
                         key_dict = {**result_dict, **map_table_dict(result_dict, selected_col_names, select_join_func, pass_none, select_join_func_col_names)}
                     key_dict = select_key_func(key_dict)
+                else:
+                    key_dict = map_table_dict(result_dict, selected_col_names, map_func, pass_none)
                 key_list = list(iter_table_dict(key_dict))
                 result_dict = flattenjoin_table_dict(result_dict, key_list, new_col_names)
                 continue
@@ -978,7 +1016,28 @@ def calc_operations(table_dict, operation_list):
                         result_dict = {**result_dict, **col_map_table_dict(result_dict, selected_col_names, select_join_func, select_join_func_col_names)}
                     result_dict = {**result_dict, **select_func(result_dict)}
                 continue
+            case Operation.NORMALIZE:
+                if len(result_dict) == 0:
+                    continue
+                selected_col_names = op['selected_col_names']
+                map_func = op['map_func']
+                new_col_names = op['new_col_names']
+                select_join_func = op['select_join_func']
+                select_join_func_col_names = op['select_join_func_col_names']
+                select_func = op['select_func']
+                pass_none = op['pass_none']
+                origin = op['origin']
 
+                table_dict = result_dict
+                if select_func:
+                    if select_join_func:
+                        table_dict = {**table_dict, **map_table_dict(table_dict, selected_col_names, select_join_func, pass_none, select_join_func_col_names)}
+                    table_dict = select_func(table_dict)
+                elif map_func or (selected_col_names and new_col_names):
+                    table_dict = map_table_dict(table_dict, selected_col_names, map_func, pass_none, new_col_names)
+
+                result_dict = normalize_table_dict(table_dict, origin, pass_none)
+                continue
     
     return result_dict
 
@@ -1000,6 +1059,8 @@ class Operation(enum.Enum):
     COLWHERE        = 14
     COLSELECT       = 15
     COLSELECTJOIN   = 16
+    NORMALIZE       = 17
+    NORMALIZE_JOIN  = 18
 
 class Qfrom():
     ## import_list
@@ -1060,6 +1121,8 @@ class Qfrom():
     @overload
     def select(self, map_func: typing.Callable|typing.Callable[[Any], tuple]|typing.Callable[[Any], dict], output_columns: str|tuple[str]) -> Qfrom: ...
     @overload
+    def select(self, columns: str|tuple[str], output_columns: str|tuple[str]) -> Qfrom: ...
+    @overload
     def select(self, columns: str|tuple[str], map_func: typing.Callable|typing.Callable[[Any], tuple]|typing.Callable[[Any], dict], output_columns: str|tuple[str]) -> Qfrom: ...
     ## select_pn -> pass None values
     @overload
@@ -1070,6 +1133,8 @@ class Qfrom():
     def select_pn(self, columns: str|tuple[str], map_func: typing.Callable|typing.Callable[[Any], tuple]|typing.Callable[[Any], dict]) -> Qfrom: ...
     @overload
     def select_pn(self, map_func: typing.Callable|typing.Callable[[Any], tuple]|typing.Callable[[Any], dict], output_columns: str|tuple[str]) -> Qfrom: ...
+    @overload
+    def select_pn(self, columns: str|tuple[str], output_columns: str|tuple[str]) -> Qfrom: ...
     @overload
     def select_pn(self, columns: str|tuple[str], map_func: typing.Callable|typing.Callable[[Any], tuple]|typing.Callable[[Any], dict], output_columns: str|tuple[str]) -> Qfrom: ...
     ## select_join -> map-op which gets joined directly
@@ -1082,6 +1147,8 @@ class Qfrom():
     @overload
     def select_join(self, map_func: typing.Callable|typing.Callable[[Any], tuple]|typing.Callable[[Any], dict], output_columns: str|tuple[str]) -> Qfrom: ...
     @overload
+    def select_join(self, columns: str|tuple[str], output_columns: str|tuple[str]) -> Qfrom: ...
+    @overload
     def select_join(self, columns: str|tuple[str], map_func: typing.Callable|typing.Callable[[Any], tuple]|typing.Callable[[Any], dict], output_columns: str|tuple[str]) -> Qfrom: ...
     ## select_join_pn
     @overload
@@ -1092,6 +1159,8 @@ class Qfrom():
     def select_join_pn(self, columns: str|tuple[str], map_func: typing.Callable|typing.Callable[[Any], tuple]|typing.Callable[[Any], dict]) -> Qfrom: ...
     @overload
     def select_join_pn(self, map_func: typing.Callable|typing.Callable[[Any], tuple]|typing.Callable[[Any], dict], output_columns: str|tuple[str]) -> Qfrom: ...
+    @overload
+    def select_join_pn(self, columns: str|tuple[str], output_columns: str|tuple[str]) -> Qfrom: ...
     @overload
     def select_join_pn(self, columns: str|tuple[str], map_func: typing.Callable|typing.Callable[[Any], tuple]|typing.Callable[[Any], dict], output_columns: str|tuple[str]) -> Qfrom: ...
     ## col_where
@@ -1124,7 +1193,21 @@ class Qfrom():
     @overload
     def col_select_join(self, columns: str|tuple[str], map_func: typing.Callable|typing.Callable[[Any], tuple]|typing.Callable[[Any], dict], output_columns: str|tuple[str]) -> Qfrom: ...
     ## normalize
+    @overload
+    def normalize(self) -> Qfrom: ...
+    @overload
+    def normalize(self, columns: str|tuple[str]) -> Qfrom: ...
+    @overload
+    def normalize(self, columns: str|tuple[str], origin: int|float|str) -> Qfrom: ...
     ## normalize_join
+    ## abs
+    ## abs_pn
+    ## abs_join
+    ## abs_join_pn
+    ## center -> set a new origin for a column: [1, 2, 3], origin=2 -> [-1, 0, 1]
+    ## center_pn
+    ## center_join
+    ## center_join_pn
     
     ## join
     ## join_cross
@@ -1229,6 +1312,9 @@ class Qfrom():
                     self.table_dict = {i: list_to_array([item[i] for item in collection_list]) for i in range(len(first_item))}
                 else:
                     self.table_dict = {0: list_to_array(collection_list)}
+        
+        #test if all cols have the same length
+        #first_len = len(first(self.table_dict.values()))
         
         self.__operation_list = operation_list
 
@@ -1354,7 +1440,7 @@ class Qfrom():
                 and all(np.array_equal(col, other.table_dict[key]) for key, col in self.table_dict.items())
         return False
 
-    def __contains__(self, item: Any|tuple|dict):
+    def __contains__(self, item: Any|tuple|dict) -> bool:
         self.calculate()
 
         if type(item) is tuple:
@@ -1584,7 +1670,29 @@ class Qfrom():
             self.table_dict,
             operation_list=self.__operation_list+[operation])
 
-    #def normalize(self):
+    def normalize(self, *args, origin=None, pass_none=False):
+        selected_col_names,\
+        map_func,\
+        new_col_names,\
+        select_join_func,\
+        select_join_func_col_names,\
+        select_func\
+            = trans_select_func_args(args, keys=self.columns())
+
+        operation = {
+            'Operation': Operation.NORMALIZE,
+            'selected_col_names': selected_col_names,
+            'map_func': map_func,
+            'new_col_names': new_col_names,
+            'select_join_func': select_join_func,
+            'select_join_func_col_names': select_join_func_col_names,
+            'select_func': select_func,
+            'origin': origin,
+            'pass_none': pass_none,
+        }
+        return Qfrom(
+            self.table_dict,
+            operation_list=self.__operation_list+[operation])
 
     def shuffle(self) -> Qfrom:
         self.calculate()

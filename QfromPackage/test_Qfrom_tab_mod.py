@@ -150,6 +150,14 @@ class TestQfromClass(unittest.TestCase):
     ## col_select_join
     ## normalize
     ## normalize_join
+    ## abs
+    ## abs_pn
+    ## abs_join
+    ## abs_join_pn
+    ## center -> set a new origin for a column: [1, 2, 3], origin=2 -> [-1, 0, 1]
+    ## center_pn
+    ## center_join
+    ## center_join_pn
     
     ## join
     ## join_cross
@@ -881,23 +889,45 @@ class TestQfromClass(unittest.TestCase):
         self.assertEqual(q.col_select_join(lambda a, i: (a+6, i), 'a, i'), q_result4)
         self.assertEqual(q.col_select_join('a>1 as a'), q_result5)
     ## normalize
-    '''def test_normalize(self):
-        q = Qfrom({'a': [1, 2, 3, 4], 'b': [4, 6, 8]})
+    def test_normalize(self):
+        q = Qfrom({'a': [1, 2, 4], 'b': [4, 6, 8]})
 
-        q_result1 = Qfrom({'a': [.25, .5, .75, 1], 'b': [.5, .75, 1]})
-        q_result2 = Qfrom({'a': [.25, .5, .75, 1]})
-        q_result3 = Qfrom({'b': [.5, .75, 1]})
-        q_result4 = Qfrom({'a': [-.5, 0, .5, 1]})
-        q_result5 = Qfrom({'b': [-1, 0, 1]})
+        q_result1 = Qfrom({'a': [.25, .5, 1], 'b': [.5, .75, 1]})
+        q_result2 = Qfrom({'a': [.25, .5, 1]})
+        q_result3 = Qfrom({'c': [.25, .5, 1]})
+        q_result4 = Qfrom({'b': [.5, .75, 1]})
+        q_result5 = Qfrom({'a': [-.5, 0, 1]})
+        q_result6 = Qfrom({'b': [-1, 0, 1]})
+        q_result7 = Qfrom({'c': [-1, 0, 1]})
+        q_result8 = Qfrom({'b': [0, .5, 1]})
+        q_result9 = Qfrom({'b': [-1, -.5, 0]})
+        q_result10 = Qfrom({'a': [-.5, 0, 1], 'b': [0, .5, 1]})
+        q_result11 = Qfrom({'c': [-.5, 0, 1], 'd': [0, .5, 1]})
 
         self.assertEqual(q.normalize(), q_result1)
         self.assertEqual(q.normalize('a, b'), q_result1)
         self.assertEqual(q.normalize(('a', 'b')), q_result1)
         self.assertEqual(q.normalize('a'), q_result2)
-        self.assertEqual(q.normalize('b'), q_result3)
-        self.assertEqual(q.normalize('a', origin=2), q_result4)
-        self.assertEqual(q.normalize('b', origin='mean'), q_result5)
-        self.assertEqual(q.normalize('b', origin='median'), q_result5)'''
+        self.assertEqual(q.normalize('a', 'c'), q_result3)
+        self.assertEqual(q.normalize('a', ('c',)), q_result3)
+        self.assertEqual(q.normalize('a as c'), q_result3)
+        self.assertEqual(q.normalize('b'), q_result4)
+        self.assertEqual(q.normalize('a', origin=2), q_result5)
+        self.assertEqual(q.normalize('b', origin='mean'), q_result6)
+        self.assertEqual(q.normalize('b', origin=np.mean), q_result6)
+        self.assertEqual(q.normalize('b', origin='median'), q_result6)
+        self.assertEqual(q.normalize('b', origin=np.median), q_result6)
+        self.assertEqual(q.normalize('b', 'c', origin='median'), q_result7)
+        self.assertEqual(q.normalize('b', ('c',), origin='median'), q_result7)
+        self.assertEqual(q.normalize('b as c', origin='median'), q_result7)
+        self.assertEqual(q.normalize('b', origin='min'), q_result8)
+        self.assertEqual(q.normalize('b', origin='max'), q_result9)
+        self.assertEqual(q.normalize('a, b', origin=(2, 'min')), q_result10)
+        self.assertEqual(q.normalize('a, b', origin=(2, np.min)), q_result10)
+        self.assertEqual(q.normalize('a, b', origin={'a': 2, 'b': 'min'}), q_result10)
+        self.assertEqual(q.normalize('a, b', 'c, d', origin={'c': 2, 'd': 'min'}), q_result11)
+        self.assertEqual(q.normalize('a as c, b as d', origin={'c': 2, 'd': 'min'}), q_result11)
+        self.assertEqual(q.normalize('a as c, b as d', origin={'c': 2, 'd': np.min}), q_result11)
     ## normalize_join
     '''def test_normalize_join(self):
         q = Qfrom({'a': [1, 2, 3, 4], 'b': [4, 6, 8]})
@@ -916,6 +946,14 @@ class TestQfromClass(unittest.TestCase):
         self.assertEqual(q.normalize_join('a', origin=2), q_result4)
         self.assertEqual(q.normalize_join('b', origin='mean'), q_result5)
         self.assertEqual(q.normalize_join('b', origin='median'), q_result5)'''
+    ## abs
+    ## abs_pn
+    ## abs_join
+    ## abs_join_pn
+    ## center -> set a new origin for a column: [1, 2, 3], origin=2 -> [-1, 0, 1]
+    ## center_pn
+    ## center_join
+    ## center_join_pn
 
     
     ## join
@@ -1427,7 +1465,6 @@ class TestQfromClass(unittest.TestCase):
     def test_todict(self):
         d = {'a': np.array([1, 2, 3]), 'b': np.array([4, 5, 6])}
         q = Qfrom(d)
-        print(f'{d=}, {q=}')
 
         self.assertTrue(all(key1==key2 and np.array_equal(col1, col2) for (key1, col1), (key2, col2) in zip(q.todict().items(), d.items())))
     ## toarray
