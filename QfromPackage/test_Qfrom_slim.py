@@ -42,12 +42,25 @@ class TestColClass(unittest.TestCase):
 class TestFuncClass(unittest.TestCase):
     # - __call__(func, in: int, out: int) -> verpackt func in lambda, so dass lambda-parameter in-count entsprechen und output tuple out-count entspricht.
     # - vec(func) -> vectorize func, autodetect in and out counts
+    def test_vec(self):
+        a = np.array([1, 2, 3])
+
+        f1 = lambda x: x+1
+        f2 = lambda x: (x, x+1)
+        f3 = lambda x: {'x1': x, 'x2': x+1}
+
+        result1 = np.array([2, 3, 4])
+        result2 = (np.array([1, 2, 3]), np.array([2, 3, 4]))
+        result3 = {'x1': np.array([1, 2, 3]), 'x2': np.array([2, 3, 4])}
+
+        self.assertTrue(np.array_equal(func.vec(f1)(a), result1))
+        self.assertTrue(np.array_equal(x1, x2) for x1, x2 in zip(func.vec(f2)(a), result2))
+        self.assertTrue(k1==k2 and np.array_equal(v1, v2) for (k1, v1), (k2, v2) in zip(func.vec(f3)(a).items(), result3.items()))
     # - vec(func, in: int, out: int)
     # - multicol(repetitioncount: int)
     # (- args(func))
     # (   -> ex. args(lambda a,b: a+b) -> {('a', 'b'): lambda a,b: a+b})
     # (   -> ex. args(lambda a,b, *args: (a+b, *args)) -> {('a', 'b', '*'): lambda a,b, *args: (a+b, *args)})
-    pass
 
 class TestAggClass(unittest.TestCase):
     # - any
@@ -208,17 +221,38 @@ class TestQfromClass(unittest.TestCase):
     # - repr
     # - append
     def test_append(self):
-        q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
-        q_result = Qfrom({'a': [1, 2, 3, 7], 'b': [4, 5, 6, 8]})
+        q1 = Qfrom()
+        q2 = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+        q1_result1 = Qfrom({'y': [1]})
+        q1_result2 = Qfrom({'y': [1, 2]})
+        q1_result3 = Qfrom({'y1': [1], 'y2': [2]})
+        q1_result4 = Qfrom({'a': [1], 'b': [2]})
+        q2_result = Qfrom({'a': [1, 2, 3, 7], 'b': [4, 5, 6, 8]})
 
-        q1 = Qfrom(q)
-        q1.append((7, 8))
+        q1_1 = Qfrom(q1)
+        q1_1.append(1)
+        q1_2 = Qfrom(q1)
+        q1_2.append((1,))
+        q1_3 = Qfrom(q1)
+        q1_3.append(1)
+        q1_3.append(2)
+        q1_4 = Qfrom(q1)
+        q1_4.append((1, 2))
+        q1_5 = Qfrom(q1)
+        q1_5.append({'a': 1, 'b':2})
 
-        q2 = Qfrom(q)
-        q2.append({'a': 7, 'b':8})
+        q2_1 = Qfrom(q2)
+        q2_1.append((7, 8))
+        q2_2 = Qfrom(q2)
+        q2_2.append({'a': 7, 'b':8})
 
-        self.assertEqual(q1, q_result)
-        self.assertEqual(q2, q_result)
+        self.assertEqual(q1_1, q1_result1)
+        self.assertEqual(q1_2, q1_result1)
+        self.assertEqual(q1_3, q1_result2)
+        self.assertEqual(q1_4, q1_result3)
+        self.assertEqual(q1_5, q1_result4)
+        self.assertEqual(q2_1, q2_result)
+        self.assertEqual(q2_2, q2_result)
     # - setitem -> more dim slice support
     def test_setitem(self):
         q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})

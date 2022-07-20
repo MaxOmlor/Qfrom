@@ -15,6 +15,7 @@ from collections import deque
 from collections.abc import Iterable
 import csv
 from io import StringIO
+import matplotlib.pyplot as plt
 
 
 
@@ -75,6 +76,9 @@ def array_tuple_to_tuple_array(array_list: tuple[np.ndarray]|list[np.ndarray]) -
         a = np.empty(len(l), dtype=object)
         a[:] = l
         return a
+
+def optimize_array_dtype(array):
+    return list_to_array(list(array))
 
 
 
@@ -321,12 +325,23 @@ def key_array_to_value_counts(key_iter: Iterable):
         'count': np.array(list(unique_id_dict.values()))
         }
 
-def append_table_dict(table_dict, item):
+def append_table_dict(table_dict: dict[str, np.ndarray], item):
     if type(item) is tuple:
-        return {key:np.append(table_dict[key], [item[i]]) for i, key in enumerate(table_dict.keys())}
+        if len(table_dict) == 0 and len(item) == 1:
+            return {'y': list_to_array([item[0]])}
+        if len(table_dict) == 0:
+            return {f'y{i+1}': list_to_array([value]) for i, value in enumerate(item)}
+        return {key:np.append(col, [item[i]]) for i, (key, col) in enumerate(table_dict.items())}
+    
     if type(item) is dict:
-        return {key:np.append(table_dict[key], [item[key]]) for key in table_dict.keys()}
-    raise ValueError('item must be of type tuple or dict')
+        if len(table_dict) == 0:
+            return {key: list_to_array([value]) for key, value in item.items()}
+        return {key: np.append(col, [item[key]]) for key, col in table_dict.items()}
+    
+    if len(table_dict) == 0:
+        return {'y': list_to_array([item])}
+    key, col = first(table_dict.items())
+    return {key:np.append(col, [item])}
 def map_table_dict(
     table_dict: dict[str, np.ndarray],
     args: str|tuple[str]|list[str],
@@ -576,7 +591,7 @@ def calc_operations(table_dict, operation_list):
                 reverse = op['reverse']
 
                 keys_array_list = get_keys_array_list(result_dict, selection, result_dict.keys(), func)
-                result_dict = order_by_table_dict(table_dict, keys_array_list, reverse)
+                result_dict = order_by_table_dict(result_dict, keys_array_list, reverse)
                 continue
             case Operation.WHERE:
                 if len(result_dict) == 0:
@@ -671,8 +686,8 @@ def calc_operations(table_dict, operation_list):
                 others = op['others']
                 join_outer_left = op['join_outer_left']
                 join_outer_right = op['join_outer_right']
-                for table_dict in others:
-                    result_dict = concat_table_dict(result_dict, table_dict, join_outer_left, join_outer_right)
+                for td in others:
+                    result_dict = concat_table_dict(result_dict, td, join_outer_left, join_outer_right)
                 continue
     
     return result_dict
@@ -1299,12 +1314,19 @@ class col():
     #   - copy(n)
     #   - flatten -> autodetect out count
     @classmethod
-    def flatten(cls, array: np.ndarray):
+    def flatten(cls, array: np.ndarray) -> np.ndarray|tuple[np.ndarray]|dict[str,np.ndarray]:
         if len(array) == 0:
             return array
         out_count = len(array[0])
+        if type(array[0]) is dict:
+            flatten_func = np.frompyfunc(lambda iterable: tuple(iterable.values()), 1, out_count)
+            result = flatten_func(array)
+            result = tuple(optimize_array_dtype(a) if a.dtype == np.dtype(object) else a for a in result)
+            return dict(zip(array[0].keys(), result))
         flatten_func = np.frompyfunc(lambda iterable: tuple(iterable), 1, out_count)
-        return flatten_func(array)
+        result = flatten_func(array)
+        result = tuple(optimize_array_dtype(a) if a.dtype == np.dtype(object) else a for a in result)
+        return result
     #
     # = n -> m
     #   - ml_models
@@ -1315,7 +1337,7 @@ class func():
     # - vec(func) -> vectorize func, autodetect in and out counts
     # - vec(func, in: int, out: int)
     @classmethod
-    def vec(cls, func: callable, in_count: int=None, out: int=1):
+    def vec(cls, func: callable, in_count: int=None, out: int=None):
         paras = []
         if in_count is None:
             sig = inspect.signature(func)
@@ -1326,14 +1348,23 @@ class func():
         else:
             names = [f'x{i}' for i in range(in_count)]
             paras = names
-        np_func = np.frompyfunc(func, in_count, out)
+        if out is None:
+            out_count = 1
+        else:
+            out_count = out
+        func_vec = np.frompyfunc(func, in_count, out_count)
+
+        def np_func_wrapper(*args, **kwrgs):
+            func_result = func_vec(*args, **kwrgs)
+            if out is None and len(func_result) > 1 and type(func_result[0]) in [tuple, dict]:
+                return col.flatten(func_result)
+            return func_result
 
         args_str = ', '.join(paras)
         arg_names_str = ', '.join(names)
-        func_str = f'lambda {args_str}: np_func({arg_names_str})'
+        func_str = f'lambda {args_str}: np_func_wrapper({arg_names_str})'
 
-        var_func = eval(func_str, {'np_func': np_func})
-        return var_func
+        return eval(func_str, {'np_func_wrapper': np_func_wrapper})
     # - multicol(repetitioncount: int)
     # (- args(func))
     # (   -> ex. args(lambda a,b: a+b) -> {('a', 'b'): lambda a,b: a+b})
@@ -1388,6 +1419,42 @@ class agg():
 
 class plot():
     # - plot
+    @classmethod
+    def plot(cls, q: Qfrom, x=None, show_legend=True, title=None, x_scale_log=False, y_scale_log=False, axis=None, figsize=None, order_by_x=True) -> None:
+        q.calculate()
+
+        ax = axis
+        if axis==None:
+            fig = plt.figure()
+            if figsize:
+                fig.set_figwidth(figsize[0])
+                fig.set_figheight(figsize[1])
+            ax = fig.add_subplot(1,1,1)
+
+        if x is None:
+            x = first(q.keys())
+        
+        q_data = q.orderby(x) if order_by_x else q
+        q_data.calculate()
+        col_list = [key for key in q_data.keys() if key != x]
+
+        x_list = q_data[x](out.array)
+        ax.set_xlabel(x)
+        for c in col_list:
+            c_list = q_data[c](out.array)
+            ax.plot(x_list, c_list, label=c)
+        
+        if x_scale_log:
+            ax.set_xscale('log')
+        if y_scale_log:
+            ax.set_yscale('log')
+        if show_legend:
+            ax.legend()
+        if title is not None:
+            ax.set_title(title)
+        
+        if axis == None:
+            plt.show()
     # - bar
     # - hist
     # - box
@@ -1433,8 +1500,9 @@ class out():
         if len(q) == 0:
             return ''
         
-        header_str = delimiter.join([str(key) for key in q.keys()])
-        data = [delimiter.join([f'"{str(item)}"' if delimiter in str(item) else str(item) for item in row]) for row in q]
+        header_str = delimiter.join(q.keys())
+        data = [[str(item(out.dict)) if type(item) is Qfrom else str(item) for item in row] for row in q]
+        data = [delimiter.join([f'"{item}"' if delimiter in item else item for item in row]) for row in data]
         data_str = '\n'.join(data)
 
         return f'{header_str}\n{data_str}' if header else data_str
