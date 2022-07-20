@@ -376,8 +376,9 @@ def map_table_dict(
             kwrgs_cols = {key:table_dict[key] for key in kwrgs}
             arg_cols = tuple(table_dict[key] for key in args)
             func_result = func(*arg_cols, **kwrgs_cols)
-        arg_cols = tuple(table_dict[key] for key in args)
-        func_result = func(*arg_cols)
+        else:
+            arg_cols = tuple(table_dict[key] for key in args)
+            func_result = func(*arg_cols)
     elif len(args) > 1:
         arg_cols = tuple(table_dict[key] for key in args)
         func_result = arg_cols
@@ -1276,6 +1277,12 @@ class col():
         array_tuple = np.array(arrays)
         return np.min(array_tuple, axis=0)
     #   - min_colname
+    @classmethod
+    def min_colname(cls, **kwrgs):
+        array_tuple = np.array(list(kwrgs.values()))
+        ids = np.argmin(array_tuple, axis=0)
+        key_array = np.array(list(kwrgs.keys()))
+        return key_array[ids]
     #   - max
     @classmethod
     def max(cls, *arrays):
@@ -1283,6 +1290,12 @@ class col():
         array_tuple = np.array(arrays)
         return np.max(array_tuple, axis=0)
     #   - max_colname
+    @classmethod
+    def max_colname(cls, **kwrgs):
+        array_tuple = np.array(list(kwrgs.values()))
+        ids = np.argmax(array_tuple, axis=0)
+        key_array = np.array(list(kwrgs.keys()))
+        return key_array[ids]
     #   - sum
     @classmethod
     def sum(cls, *arrays):
