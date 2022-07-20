@@ -499,6 +499,7 @@ class TestQfromClass(unittest.TestCase):
         self.assertEqual(q.map(func=lambda c: c), q)
         self.assertEqual(q.map('c', col.sum), q)
         self.assertEqual(q.map('a', out='d'), q_result6)
+        #self.assertEqual(q.map(func=lambda **kwrgs: kwrgs), q)
 
     # - orderby(selection: str|tuple[str]|list[str], func: callable, reverse: bool)
     def test_orderby(self):

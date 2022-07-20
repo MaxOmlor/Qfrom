@@ -284,11 +284,16 @@ def trans_select(selection: str|tuple[str]|list[str], keys: tuple[str]) -> list[
 
     return tuple(item for part in sep_select_t for item in part)
 def get_keys_from_func_args(func: callable, keys):
-    func_args = get_keys_from_func(func, False)
+    func_args = get_keys_from_func(func)
+    kwrgs = False
 
     unused_keys = list(keys)
     select_args = []
     for arg in func_args:
+        if arg == '**':
+            select_args += unused_keys
+            kwrgs = True
+            break
         if arg == '*':
             select_args += unused_keys
             break
@@ -297,7 +302,7 @@ def get_keys_from_func_args(func: callable, keys):
         else:
             unused_keys.remove(arg)
             select_args.append(arg)
-    return select_args
+    return select_args, kwrgs
 
 
 
@@ -344,18 +349,41 @@ def append_table_dict(table_dict: dict[str, np.ndarray], item):
     return {key:np.append(col, [item])}
 def map_table_dict(
     table_dict: dict[str, np.ndarray],
-    args: str|tuple[str]|list[str],
+    args: tuple[str]|list[str],
     func: callable,
     out: tuple[str]|list[str]=None
     ) -> dict[str, np.ndarray]:
 
-    if args is None:
-        args = get_keys_from_func_args(func, table_dict.keys())
-    arg_cols = tuple(table_dict[key] for key in args)
     if type(out) is str:
         out = [key.strip() for key in out.split(',')]
 
-    func_result = func(*arg_cols) if func else arg_cols if type(arg_cols) is tuple else arg_cols[0]
+    kwrgs = False
+    func_result = None
+    if args is None:
+        args, as_kwrgs = get_keys_from_func_args(func, table_dict.keys())
+    
+        if as_kwrgs:
+            kwrgs_cols = {key:table_dict[key] for key in args}
+            func_result = func(**kwrgs_cols)
+        else:
+            arg_cols = tuple(table_dict[key] for key in args)
+            func_result = func(*arg_cols)
+    elif func:
+        keys = get_keys_from_func(func)
+        if '**' in keys:
+            kwrgs = args[len(keys)-1:] 
+            args = args[:len(keys)-1]
+            kwrgs_cols = {key:table_dict[key] for key in kwrgs}
+            arg_cols = tuple(table_dict[key] for key in args)
+            func_result = func(*arg_cols, **kwrgs_cols)
+        arg_cols = tuple(table_dict[key] for key in args)
+        func_result = func(*arg_cols)
+    elif len(args) > 1:
+        arg_cols = tuple(table_dict[key] for key in args)
+        func_result = arg_cols
+    else:
+        func_result = table_dict[args[0]]
+
 
     if type(func_result) is tuple and out is not None:
         return {out[i]: col for i, col in enumerate(func_result)}
