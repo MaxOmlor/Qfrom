@@ -21,6 +21,7 @@ import time
 
 
 
+
 def first(iterable, predicate_func=None):
     if predicate_func:
         for item in iterable:
@@ -32,13 +33,24 @@ def first(iterable, predicate_func=None):
 def will_be_tranformed_to_array(data):
     class_dir = dir(type(data))
     return '__len__' in class_dir and '__getitem__' in class_dir
-def list_to_array(l):
+def list_to_array(l: list):
     if len(l) > 0 and will_be_tranformed_to_array(l[0]):
         a = np.empty(len(l), dtype=object)
         a[:] = l
         return a
     else:
         return np.array(l)
+def iter_to_array(iterable: Iterable):
+    first_item = next(iter(iterable))
+    if will_be_tranformed_to_array(first_item):
+        l = list(iterable)
+        a = np.empty(len(l), dtype=object)
+        a[:] = l
+        return a
+    else:
+        t = str(np.array(first_item).dtype)
+        return np.fromiter(iterable, dtype=t)
+
 def split_iterable(list_to_split: Iterable, predicate: callable) -> tuple[list, list]:
     true_list, false_list = [], []
     for item in list_to_split:
@@ -89,7 +101,7 @@ def optimize_array_dtype(array):
 def get_keys_from_func(func, kwrgs=True):
     #names = tuple(func.__code__.co_varnames)
     sig = inspect.signature(func)
-    names = list(sig.parameters.keys())
+    names = sig.parameters.keys()
     paras = [str(v) for v in sig.parameters.values()]
     #return tuple('...' if '*' in para else n for n, para in zip(names, paras))
     if kwrgs:
@@ -125,8 +137,9 @@ def parse_iterable_to_array(iterable):
     if isinstance(iterable, list):
         return list_to_array(iterable)
     # numpy from iter
-    iter_list = list(iterable)
-    return list_to_array(iter_list)
+    #iter_list = list(iterable)
+    #return list_to_array(iter_list)
+    return iter_to_array(iterable)
 def parse_iterables_to_arrays(table_dict):
     table_dict_type = type(table_dict)
 
@@ -331,8 +344,10 @@ def key_array_to_value_counts(key_iter: Iterable):
         unique_id_dict[key] += 1
     
     return {
-        'value': list_to_array(list(unique_id_dict.keys())),
-        'count': np.array(list(unique_id_dict.values()))
+        #'value': list_to_array(list(unique_id_dict.keys())),
+        'value': iter_to_array(unique_id_dict.keys()),
+        #'count': np.array(list(unique_id_dict.values()))
+        'count': iter_to_array(unique_id_dict.values())
         }
 
 def append_table_dict(table_dict: dict[str, np.ndarray], item):
@@ -413,10 +428,11 @@ def map_table_dict(
         first_col = first(table_dict.values())
         return {'y': list_to_array([next(func_result) for _ in first_col])}
 
-    if type(func_result) is not np.ndarray and isinstance(func_result, Iterable):
-        if type(func_result) is not list:
-            func_result = list(func_result)
+    #if type(func_result) is not np.ndarray and isinstance(func_result, Iterable):
+    if type(func_result) is not np.ndarray and type(func_result) is list:
         func_result = list_to_array(func_result)
+    if type(func_result) is not np.ndarray and type(func_result) is Iterable:
+        func_result = iter_to_array(func_result)
     if type(func_result) is np.ndarray and out is not None:
         return {out[0]: func_result}
     if type(func_result) is np.ndarray and len(args) > 0:
@@ -565,7 +581,8 @@ def group_by_table_dict(table_dict: dict[str, np.ndarray], key_iter: Iterable):
         group_array[i] = Qfrom({key: col[group] for key, col in table_dict.items()})
     
     result_dict = {
-        'key': list_to_array(list(group_ids_dict.keys())),
+        #'key': list_to_array(list(group_ids_dict.keys())),
+        'key': iter_to_array(group_ids_dict.keys()),
         'group': group_array}
 
     return result_dict
@@ -1312,9 +1329,11 @@ class col():
     #   - min_colname
     @classmethod
     def min_colname(cls, **kwrgs):
-        array_tuple = np.array(list(kwrgs.values()))
+        #array_tuple = np.array(list(kwrgs.values()))
+        array_tuple = iter_to_array(kwrgs.values())
         ids = np.argmin(array_tuple, axis=0)
-        key_array = np.array(list(kwrgs.keys()))
+        #key_array = np.array(list(kwrgs.keys()))
+        key_array = iter_to_array(kwrgs.keys())
         return key_array[ids]
     #   - max
     @classmethod
@@ -1325,9 +1344,11 @@ class col():
     #   - max_colname
     @classmethod
     def max_colname(cls, **kwrgs):
-        array_tuple = np.array(list(kwrgs.values()))
+        #array_tuple = np.array(list(kwrgs.values()))
+        array_tuple = iter_to_array(kwrgs.values())
         ids = np.argmax(array_tuple, axis=0)
-        key_array = np.array(list(kwrgs.keys()))
+        #key_array = np.array(list(kwrgs.keys()))
+        key_array = iter_to_array(kwrgs.keys())
         return key_array[ids]
     #   - sum
     @classmethod
@@ -1411,7 +1432,7 @@ class func():
     # - vec(func) -> vectorize func, autodetect in and out counts
     # - vec(func, in: int, out: int)
     @classmethod
-    def vec(cls, func: callable, in_count: int=None, out: int=None):
+    def vec(cls, func: callable, in_count: int=None, out: int=None, correct_dtype=False):
         paras = []
         if in_count is None:
             sig = inspect.signature(func)
@@ -1426,7 +1447,12 @@ class func():
             out_count = 1
         else:
             out_count = out
-        func_vec = np.frompyfunc(func, in_count, out_count)
+
+        func_vec = None
+        if correct_dtype:
+            func_vec = np.vectorize(func)
+        else:
+            func_vec = np.frompyfunc(func, in_count, out_count)
 
         def np_func_wrapper(*args, **kwrgs):
             func_result = func_vec(*args, **kwrgs)
@@ -1562,7 +1588,8 @@ class out():
         if len(q.table_dict) == 1:
             return first(q.table_dict.values())
 
-        result = np.array(list(q.table_dict.values())[::-1])
+        #result = np.array(list(q.table_dict.values())[::-1])
+        result = iter_to_array(q.table_dict.values())[::-1]
         result = np.rot90(result, 3)
         return result
     # - (tomtx)
