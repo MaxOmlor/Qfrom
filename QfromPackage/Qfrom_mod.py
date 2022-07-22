@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+from typing import Any
 import pandas as pd
 import csv
 import numpy as np
@@ -501,6 +502,9 @@ class Qfrom():
             self.calculate()
         return self.__iterable.size
 
+    def size(self) -> int:
+        return len(self)
+
     def __getitem__(self, key):
         if any(self.__operation_list):
             self.calculate()
@@ -510,7 +514,7 @@ class Qfrom():
             return Qfrom(result)
         return result
 
-    def __setitem__(self, key, item):
+    def __setitem__(self, key, item) -> None:
         if any(self.__operation_list):
             self.calculate()
         self.__iterable[key] = item
@@ -538,9 +542,31 @@ class Qfrom():
     def __repr__(self) -> str:
         return str(self)
 
+    def __eq__(self, other) -> bool:
+        #if any(self.__operation_list):
+        self.calculate()
+        if isinstance(other, Qfrom):
+            return np.array_equal(self.__iterable, other())
+        return False
+
 
     #-- expanded list func --------------------------------------#
     def select(self, func):
+        '''
+        projects each element into a new form given by func-arg
+
+        Parameters
+        ----------
+        func : function
+            function witch takes in one element as a parameter an returns the element in a new form.
+            additionally the function can take in the index of the element as well. this is optional.
+        
+        Returns
+        -------
+        Qfrom
+            projected Qfrom
+        '''
+
         select_func = trans_func(func)
 
         operation = {
@@ -549,17 +575,64 @@ class Qfrom():
         }
         return Qfrom(self.__iterable, operation_list=self.__operation_list+[operation])
     def s(self, func):
+        '''
+        short name for select.
+        projects each element into a new form given by func-arg
+
+        Parameters
+        ----------
+        func : function
+            function witch takes in one element as a parameter an returns the element in a new form.
+            additionally the function can take in the index of the element as well. this is optional.
+        
+        Returns
+        -------
+        Qfrom
+            projected Qfrom
+        '''
         return self.select(func)
 
-    def where(self, func):
-        where_func = trans_func(func)
+    def where(self, predicate):
+        '''
+        filters the elements of the given Qfrom based on a predicate-arg.
+        predicate-arg must be a function witch returns a bool.
+        
+        Parameters
+        ----------
+        predicate : function
+            function witch takes in one element as a parameter an returns a bool.
+            additionally the function can take in the index of the element as well. this is optional.
+        
+        Returns
+        -------
+        Qfrom
+            filtered Qfrom
+        '''
+
+        where_predicate = trans_func(predicate)
 
         operation = {
             'Operation': Operation.WHERE,
-            'func': where_func
+            'func': where_predicate
         }
         return Qfrom(self.__iterable, operation_list=self.__operation_list+[operation])
     def w(self, func):
+        '''
+        short name for where.
+        filters the elements of the given Qfrom based on a predicate-arg.
+        predicate-arg must be a function witch returns a bool.
+        
+        Parameters
+        ----------
+        predicate : function
+            function witch takes in one element as a parameter an returns a bool.
+            additionally the function can take in the index of the element as well. this is optional.
+        
+        Returns
+        -------
+        Qfrom
+            filtered Qfrom
+        '''
         return self.where(func)
 
     def flatten(self, select_collection=lambda item: item, select_result=lambda parent, child: child):
@@ -576,6 +649,27 @@ class Qfrom():
         return self.flatten(select_collection, select_result)
 
     def group_by(self, key, value = lambda x:x):
+        '''
+        groups the elements of the given Qfrom based on a key-arg. 
+        optionaly the form of the group elements can be desciped by a value-arg.
+        key-arg must be a function witch returns some kind of a hashable key.
+        
+        Parameters
+        ----------
+        key : function
+            function witch takes in one element as a parameter an returns a hashable key.
+            additionally the function can take in the index of the element as well. this is optional.
+        value : function, optional
+            function witch takes in one element as a parameter an returns the element in a new form.
+            additionally the function can take in the index of the element as well. this is optional.
+        
+        Returns
+        -------
+        Qfrom
+            returns a grouped Qfrom.
+            a group is represented by a dict containing the keys: key, value
+        '''
+
         get_key_func = trans_func(key, False)
         get_value_func = trans_func(value)
         
@@ -586,6 +680,27 @@ class Qfrom():
             }
         return Qfrom(self.__iterable, operation_list=self.__operation_list+[operation])
     def g(self, get_key_func, get_value_func = lambda x:x):
+        '''
+        short name for group_by.
+        groups the elements of the given Qfrom based on a key-arg. 
+        optionaly the form of the group elements can be desciped by a value-arg.
+        key-arg must be a function witch returns some kind of a hashable key.
+        
+        Parameters
+        ----------
+        key : function
+            function witch takes in one element as a parameter an returns a hashable key.
+            additionally the function can take in the index of the element as well. this is optional.
+        value : function, optional
+            function witch takes in one element as a parameter an returns the element in a new form.
+            additionally the function can take in the index of the element as well. this is optional.
+        
+        Returns
+        -------
+        Qfrom
+            returns a grouped Qfrom.
+            a group is represented by a dict containing the keys: key, value
+        '''
         return self.group_by(get_key_func, get_value_func)
 
     def order_by(self, key = None, reverse=False):
@@ -711,12 +826,6 @@ class Qfrom():
     def __pow__(self, other):
         self.calculate()
         return Qfrom(self.__iterable ** other)
-    def __eq__(self, other) -> bool:
-        #if any(self.__operation_list):
-        self.calculate()
-        if isinstance(other, Qfrom):
-            return np.array_equal(self.__iterable, other())
-        return False
     #def __lt__(self, other):
     #def __le__(self, other):
     #def __gt__(self, other):
