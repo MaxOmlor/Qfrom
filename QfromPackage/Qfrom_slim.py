@@ -16,6 +16,7 @@ from collections.abc import Iterable
 import csv
 from io import StringIO
 import matplotlib.pyplot as plt
+import time
 
 
 
@@ -61,8 +62,10 @@ def iter_array_list(array_list: list[np.ndarray]) -> Iterable|None:
         return None
     if len(array_list) == 1:
         return iter(array_list[0])
+        #return np.nditer(array_list[0], flags=['refs_ok'])
     else:
         return zip(*array_list)
+        #return np.nditer(array_list, flags=['refs_ok'])
 
 def arr_set_value(arr: np.array, key: int, value):
     value_type = np.array([value]).dtype
@@ -72,8 +75,9 @@ def arr_set_value(arr: np.array, key: int, value):
     return arr
 
 def array_tuple_to_tuple_array(array_list: tuple[np.ndarray]|list[np.ndarray]) -> np.ndarray[tuple]:
-        l = [t for t in zip(*array_list)]
-        a = np.empty(len(l), dtype=object)
+        l = list(zip(*array_list))
+        #it = np.nditer(array_list, flags=['refs_ok'])
+        a = np.empty(len(array_list[0]), dtype=object)
         a[:] = l
         return a
 
@@ -321,6 +325,7 @@ def group_by_dict(key_iter: Iterable):
 def key_array_to_value_counts(key_iter: Iterable):
     unique_id_dict = {}
     for key in key_iter:
+        #print(f'{key=}')
         if key not in unique_id_dict:
             unique_id_dict[key] = 0
         unique_id_dict[key] += 1
@@ -385,9 +390,12 @@ def map_table_dict(
     else:
         func_result = table_dict[args[0]]
 
+    #func_result = optimize_array_dtype(func_result)
 
     if type(func_result) is tuple and out is not None:
         return {out[i]: col for i, col in enumerate(func_result)}
+    if type(func_result) is tuple and len(args) > 0 and len(func_result) == 1:
+        return {args[0]: func_result[0]}
     if type(func_result) is tuple and len(args) > 0:
         return {f'{args[0]}{i}': col for i, col in enumerate(func_result)}
     if type(func_result) is tuple:
@@ -599,7 +607,8 @@ def calc_operations(table_dict, operation_list):
                 selection = op['selection']
 
                 selection = trans_select(selection, keys=result_dict.keys())
-                result_dict = {key: result_dict[key] for key in selection}
+                #result_dict = {key: result_dict[key] for key in selection}
+                result_dict = {key: col for key, col in result_dict.items() if key in selection}
                 continue
             case Operation.MAP:
                 if len(result_dict) == 0:
@@ -809,39 +818,42 @@ class Qfrom():
     # - import_csv
     # - (import_json)
     # - import_generator
-    def __init__(self, collection=None, operation_list=None) -> Qfrom:
+    def __init__(self, collection=None, operation_list=None, table_dict=None) -> Qfrom:
         operation_list = operation_list if operation_list else []
-
-        self.table_dict = dict()
-        if isinstance(collection, str):
-            self.table_dict = parse_iterables_to_arrays(parse_str_to_collection(collection))
-        elif isinstance(collection, dict):
-            self.table_dict = parse_iterables_to_arrays(collection)
-        elif isinstance(collection, Qfrom):
-            collection.calculate()
-            self.table_dict = {key:np.copy(value) for key, value in collection.table_dict.items()}
-        elif isinstance(collection, np.ndarray) and len(collection.shape) == 1:
-            self.table_dict = {'0': np.copy(collection)}
-        elif isinstance(collection, np.ndarray) and len(collection.shape) > 1:
-            collection_rot = np.rot90(collection)
-            self.table_dict = {str(i):col for i, col in enumerate(collection_rot[::-1])}
-        elif isinstance(collection, pd.DataFrame):
-            raise NotImplementedError()
-        elif isinstance(collection, Iterable):
-            collection_list = list(collection)
-            if len(collection_list) > 0:
-                first_item = first(collection_list)
-                if isinstance(first_item, dict):
-                    self.table_dict = {key: list_to_array([item[key] for item in collection_list]) for key in first_item.keys()}
-                elif isinstance(first_item, tuple):
-                    self.table_dict = {str(i): list_to_array([item[i] for item in collection_list]) for i in range(len(first_item))}
-                else:
-                    self.table_dict = {'0': list_to_array(collection_list)}
+        self.__operation_list = operation_list
+        
+        if table_dict:
+            self.table_dict = table_dict
+        else:
+            self.table_dict = dict()
+            if isinstance(collection, str):
+                self.table_dict = parse_iterables_to_arrays(parse_str_to_collection(collection))
+            elif isinstance(collection, dict):
+                self.table_dict = parse_iterables_to_arrays(collection)
+            elif isinstance(collection, Qfrom):
+                collection.calculate()
+                self.table_dict = {key:np.copy(value) for key, value in collection.table_dict.items()}
+            elif isinstance(collection, np.ndarray) and len(collection.shape) == 1:
+                self.table_dict = {'0': np.copy(collection)}
+            elif isinstance(collection, np.ndarray) and len(collection.shape) > 1:
+                collection_rot = np.rot90(collection)
+                self.table_dict = {str(i):col for i, col in enumerate(collection_rot[::-1])}
+            elif isinstance(collection, pd.DataFrame):
+                raise NotImplementedError()
+            elif isinstance(collection, Iterable):
+                collection_list = list(collection)
+                if len(collection_list) > 0:
+                    first_item = first(collection_list)
+                    if isinstance(first_item, dict):
+                        self.table_dict = {key: list_to_array([item[key] for item in collection_list]) for key in first_item.keys()}
+                    elif isinstance(first_item, tuple):
+                        self.table_dict = {str(i): list_to_array([item[i] for item in collection_list]) for i in range(len(first_item))}
+                    else:
+                        self.table_dict = {'0': list_to_array(collection_list)}
         
         #test if all cols have the same length
         #first_len = len(first(self.table_dict.values()))
         
-        self.__operation_list = operation_list
 
     # - eq
     def __eq__(self, other: Qfrom) -> bool:
@@ -926,7 +938,7 @@ class Qfrom():
 
         raise ValueError('key must be of type int, str, tuple or list')
     # - getitem
-    def __getitem__(self, *args):
+    def __getitem__(self, *args) -> Any|Qfrom:
         if any(self.__operation_list):
             self.calculate()
         
@@ -999,8 +1011,9 @@ class Qfrom():
             'selection': selection,
         }
         return Qfrom(
-            self.table_dict,
-            operation_list=self.__operation_list+[operation])
+            operation_list=self.__operation_list+[operation],
+            table_dict=self.table_dict,
+            )
     # - rename(map: dict[str, str])
     def rename(self, map: dict[str, str]) -> Qfrom:
         operation = {
@@ -1008,8 +1021,9 @@ class Qfrom():
             'map': map,
         }
         return Qfrom(
-            self.table_dict,
-            operation_list=self.__operation_list+[operation])
+            operation_list=self.__operation_list+[operation],
+            table_dict=self.table_dict,
+            )
     # - select(selection: str|tuple[str]|list[str])
     def select(self, selection: str|tuple[str]|list[str]) -> Qfrom:
         operation = {
@@ -1017,8 +1031,9 @@ class Qfrom():
             'selection': selection,
         }
         return Qfrom(
-            self.table_dict,
-            operation_list=self.__operation_list+[operation])
+            operation_list=self.__operation_list+[operation],
+            table_dict=self.table_dict,
+            )
     # - map(args: str|tuple[str]|list[str], func: callable, out=str|tuple[str]|list[str])
     def map(
         self,
@@ -1034,8 +1049,9 @@ class Qfrom():
             'out': out,
         }
         return Qfrom(
-            self.table_dict,
-            operation_list=self.__operation_list+[operation])
+            operation_list=self.__operation_list+[operation],
+            table_dict=self.table_dict,
+            )
     # - orderby(selection: str|tuple[str]|list[str], func: callable, reverse: bool)
     def orderby(self, selection: str|tuple[str]|list[str]=None, func: callable=None, reverse: bool=False) -> Qfrom:
         operation = {
@@ -1045,8 +1061,9 @@ class Qfrom():
             'reverse': reverse,
         }
         return Qfrom(
-            self.table_dict,
-            operation_list=self.__operation_list+[operation])
+            operation_list=self.__operation_list+[operation],
+            table_dict=self.table_dict,
+            )
 
     # - where(selection: str|tuple[str]|list[str], predicate: callable)
     def where(self, selection: str|tuple[str]|list[str]=None, func: callable=None) -> Qfrom:
@@ -1056,8 +1073,9 @@ class Qfrom():
             'func': func,
         }
         return Qfrom(
-            self.table_dict,
-            operation_list=self.__operation_list+[operation])
+            operation_list=self.__operation_list+[operation],
+            table_dict=self.table_dict,
+            )
     # - groupby(selection: str|tuple[str]|list[str], func: callable)
     def groupby(self, selection: str|tuple[str]|list[str]=None, func: callable=None) -> Qfrom:
         operation = {
@@ -1066,8 +1084,9 @@ class Qfrom():
             'func': func,
         }
         return Qfrom(
-            self.table_dict,
-            operation_list=self.__operation_list+[operation])
+            operation_list=self.__operation_list+[operation],
+            table_dict=self.table_dict,
+            )
     # - flatten
     def flatten(self, key: str) -> Qfrom:
         operation = {
@@ -1075,8 +1094,9 @@ class Qfrom():
             'key': key,
         }
         return Qfrom(
-            self.table_dict,
-            operation_list=self.__operation_list+[operation])
+            operation_list=self.__operation_list+[operation],
+            table_dict=self.table_dict,
+            )
     # - unique
     def unique(self, selection: str|tuple[str]|list[str]) -> Qfrom:
         operation = {
@@ -1084,8 +1104,9 @@ class Qfrom():
             'selection': selection,
         }
         return Qfrom(
-            self.table_dict,
-            operation_list=self.__operation_list+[operation])
+            operation_list=self.__operation_list+[operation],
+            table_dict=self.table_dict,
+            )
     # - value_counts
     def value_counts(self, selection: str|tuple[str]|list[str]) -> Qfrom:
         operation = {
@@ -1093,15 +1114,22 @@ class Qfrom():
             'selection': selection,
         }
         return Qfrom(
-            self.table_dict,
-            operation_list=self.__operation_list+[operation])
+            operation_list=self.__operation_list+[operation],
+            table_dict=self.table_dict,
+            )
 
     # - agg
     def agg(self, func_tuple: callable|tuple[callable]) -> Any|tuple:
-        self.calculate()
+        if any(self.__operation_list):
+            self.calculate()
 
+        cols = list(self.values())
+        if callable(func_tuple) and len(cols) > 1:
+            result = tuple(func_tuple(col) for col in cols)
+            return result
         if callable(func_tuple):
-            return tuple(func_tuple(col) for col in self.values())
+            result = func_tuple(cols[0])
+            return result
 
         agg_result = []
         not_used_columns = list(self.table_dict.values())
@@ -1131,8 +1159,9 @@ class Qfrom():
             'join_outer_right': join_outer_right,
         }
         return Qfrom(
-            self.table_dict,
-            operation_list=self.__operation_list+[operation])
+            operation_list=self.__operation_list+[operation],
+            table_dict=self.table_dict,
+            )
     # - join_cross
     def join_cross(self, other: Qfrom) -> Qfrom:
         operation = {
@@ -1140,8 +1169,9 @@ class Qfrom():
             'other': other.table_dict,
         }
         return Qfrom(
-            self.table_dict,
-            operation_list=self.__operation_list+[operation])
+            operation_list=self.__operation_list+[operation],
+            table_dict=self.table_dict,
+            )
     # - join_outer
     def join_outer(self, other: Qfrom, key_dict=None) -> Qfrom:
         return self.join(other, key_dict, join_outer_left=True, join_outer_right=True)
@@ -1160,8 +1190,9 @@ class Qfrom():
             'join_outer_right': join_outer_right,
         }
         return Qfrom(
-            self.table_dict,
-            operation_list=self.__operation_list+[operation])
+            operation_list=self.__operation_list+[operation],
+            table_dict=self.table_dict,
+            )
     # - join_id_outer
     def join_id_outer(self, other: Qfrom) -> Qfrom:
         return self.join_id(other, join_outer_left=True, join_outer_right=True)
@@ -1181,8 +1212,9 @@ class Qfrom():
             'join_outer_right': join_outer_right,
         }
         return Qfrom(
-            self.table_dict,
-            operation_list=self.__operation_list+[operation])
+            operation_list=self.__operation_list+[operation],
+            table_dict=self.table_dict,
+            )
     # - concat_outer
     def concat_outer(self, other: Qfrom) -> Qfrom:
         return self.concat(other, join_outer_left=True, join_outer_right=True)
@@ -1196,7 +1228,8 @@ class Qfrom():
     # - calc
     def calculate(self) -> dict[str, np.ndarray]:
         if any(self.__operation_list):
-            self.table_dict = calc_operations(dict(self.table_dict), self.__operation_list)
+            #self.table_dict = calc_operations(dict(self.table_dict), self.__operation_list)
+            self.table_dict = calc_operations(self.table_dict, self.__operation_list)
             self.__operation_list = []
         return self.table_dict
     # - call

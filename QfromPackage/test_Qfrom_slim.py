@@ -486,6 +486,7 @@ class TestQfromClass(unittest.TestCase):
         q_result4 = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6], 'c': [7, 8, 9], 'i': [0, 1, 2]})
         q_result5 = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6], 'c': [7, 8, 9], 'd': [7, 8, 9]})
         q_result6 = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6], 'c': [7, 8, 9], 'd': [1, 2, 3]})
+        q_result7 = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6], 'c': [7, 8, 9], 'd': [5, 5, 5], 'i': [0, 1, 2]})
 
         self.assertEqual(q.map(func=lambda: 5, out='d'), q_result1)
         self.assertEqual(q.map('a', agg.sum), q_result2)
@@ -497,9 +498,13 @@ class TestQfromClass(unittest.TestCase):
         self.assertEqual(q.map(['a','b','c'], col.max, 'd'), q_result5)
         self.assertEqual(q.map('*', col.max, 'd'), q_result5)
         self.assertEqual(q.map(func=lambda c: c), q)
+        self.assertEqual(q.map(func=lambda c: (c,)), q)
+        self.assertEqual(q.map(func=lambda c: {'c': c}), q)
         self.assertEqual(q.map('c', col.sum), q)
         self.assertEqual(q.map('a', out='d'), q_result6)
         #self.assertEqual(q.map(func=lambda **kwrgs: kwrgs), q)
+        self.assertEqual(q.map(func=lambda: (5,col.id), out='d,i'), q_result7)
+        self.assertEqual(q.map(func=lambda: {'d':5, 'i': col.id}), q_result7)
 
     # - orderby(selection: str|tuple[str]|list[str], func: callable, reverse: bool)
     def test_orderby(self):
@@ -623,6 +628,7 @@ class TestQfromClass(unittest.TestCase):
 
         self.assertEqual(q.agg(agg.sum), (6, 15))
         self.assertEqual(q.agg((agg.sum, agg.max)), (6, 6))
+        self.assertEqual(q['a'].agg(agg.sum), 6)
 
     # - join
     def test_join(self):
