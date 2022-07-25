@@ -593,20 +593,157 @@ q['a', 0]
 ```
 
 ## contains
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+(2, 5) in q
+```
+```
+> True
+```
+
+the order of the key-value-pairs in the dictionary does not matter.
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+{'b':5, 'a': 2} in q
+```
+```
+> True
+```
 
 ## iter
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+
+for a, b in q:
+    print(a, b)
+```
+```
+> 1 4
+> 2 5
+> 3 6
+```
 
 ## len
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+len(q)
+```
+```
+> 3
+```
 
 ## keys
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+
+for k in q.keys():
+    print(k)
+```
+```
+> a
+> b
+```
 
 ## values
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+
+for v in q.values():
+    print(v)
+```
+```
+> [1 2 3]
+> [4 5 6]
+```
 
 ## items
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+
+for v in q.values():
+    print(v)
+```
+```
+> a [1 2 3]
+> b [4 5 6]
+```
 
 ## remove
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q.remove('a')
+```
+```
+> Qfrom
+> b
+> 4
+> 5
+> 6
+```
+
+remove multiple columns
+```python
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6],
+    'c': [7, 8, 9],
+    'd': [10, 11, 12],
+    'e': [13, 14, 15],
+    })
+q.remove('a, c')
+```
+```
+> Qfrom
+> b	d	e
+> 4	10	13
+> 5	11	14
+> 6	12	15
+```
+
+it is possible to use dynamic column selection. More information in section [select](#select)
+```python
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6],
+    'c': [7, 8, 9],
+    'd': [10, 11, 12],
+    'e': [13, 14, 15],
+    })
+q.remove('...,c')
+```
+```
+> Qfrom
+> d	e
+> 10	13
+> 11	14
+> 12	15
+```
 
 ## rename
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q.rename({'b': 'c'})
+```
+```
+> Qfrom
+> a	c
+> 1	4
+> 2	5
+> 3	6
+```
+
+rename multiple columns
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q.rename({'b': 'c'})
+```
+```
+> Qfrom
+> a	y
+> 1	4
+> 2	5
+> 3	6
+```
 
 ## select
 
