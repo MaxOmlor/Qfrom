@@ -856,7 +856,7 @@ class Qfrom():
                 collection_rot = np.rot90(collection)
                 self.table_dict = {str(i):col for i, col in enumerate(collection_rot[::-1])}
             elif isinstance(collection, pd.DataFrame):
-                raise NotImplementedError()
+                self.table_dict = {key: collection[key].values for key in collection.columns}
             elif isinstance(collection, Iterable):
                 collection_list = list(collection)
                 if len(collection_list) > 0:

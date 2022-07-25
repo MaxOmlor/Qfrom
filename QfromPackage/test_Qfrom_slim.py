@@ -30,6 +30,9 @@ class TestColClass(unittest.TestCase):
     #   - eq
     #   - agg(colcount) -> combines multible cols to one 2d col
     #   - state(rules: func|dict[func]) -> iterates over col. for each item the result state of the last item is feed in. 
+    #   - lod_and
+    #   - lod_or
+    #   - lod_xor
     #
     # = 1 -> n
     #   - copy(n)
@@ -159,7 +162,24 @@ class TestQfromClass(unittest.TestCase):
     # - (import_array)
     # - (import_mtx)
     # - import_dataframe
+    def test_init_df(self):
+        df = pd.DataFrame({'a': [1, 2, 3], 'b': [4, 5, 6]})
+
+        q_result = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+
+        self.assertEqual(Qfrom(df), q_result)
     # - import_csv
+    def test_init_csv(self):
+        csv = '''
+        a,b
+        1,4
+        2,5
+        3,6
+        '''
+
+        q_result = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+
+        self.assertEqual(Qfrom(csv), q_result)
     # - (import_json)
     # - import_generator
     def test_init_generator(self):
