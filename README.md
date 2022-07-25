@@ -7,28 +7,28 @@ This Project is based on Python 3.10.0
 # Qfrom Documentation
 
 ## Contents
- - [[README#Imports]]
- - Qfrom_slim
- - col
- - func
- - agg
- - plot
- - out
- - trans
+ - [Imports](#imports)
+ - [Qfrom](#qfrom)
+ - [col](#col)
+ - [func](#func)
+ - [agg](#agg)
+ - [plot](#plot)
+ - [out](#out)
+ - [trans](#trans)
 
 ---
 
 ## Imports
- - Qfrom_slim
- - 3d party
+ - [Qfrom](#qfrom-imports)
+ - [3d party](#3d-party-imports)
 
-### Qfrom_slim
+### Qfrom imports
 ```python
 from QfromPackage.Qfrom_slim import col, func, agg, plot, out, trans, Qfrom
 ```
 
 
-### 3d party
+### 3d party imports
 ```python
 import numpy as np
 import pandas as pd
@@ -36,7 +36,7 @@ import pandas as pd
 
 ---
 
-## Qfrom_slim
+## Qfrom
 
 ### Methods
  - import_list
