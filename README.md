@@ -7,7 +7,6 @@ This Project is based on Python 3.10.0
 # Qfrom Documentation
 
 ## Contents
-- [Imports](#imports)
 - [Qfrom](#qfrom)
 - [col](#col)
 - [func](#func)
@@ -17,27 +16,13 @@ This Project is based on Python 3.10.0
 - [trans](#trans)
 ---
 
-## Imports
-- [Qfrom](#qfrom-imports)
-- [3d party](#3d-party-imports)
-
-### Qfrom imports
-```python
-from QfromPackage.Qfrom_slim import col, func, agg, plot, out, trans, Qfrom
-```
-
-
-### 3d party imports
-```python
-import numpy as np
-import pandas as pd
-```
-
-[Contents](#contents)
-
----
-
 ## Qfrom
+
+import Qfrom like this
+
+```python
+from QfromPackage.Qfrom_slim import Qfrom
+```
 
 ### Methods
 - [import list](#import-list)
@@ -172,9 +157,9 @@ Qfrom(mtx)
 ```
 > Qfrom
 > y1    y2
-> 1	    4
-> 2	    5
-> 3	    6
+> 1 4
+> 2 5
+> 3 6
 ```
 
 ### import DataFrame
@@ -242,6 +227,12 @@ performance
 
 ## col
 
+import col like this
+
+```python
+from QfromPackage.Qfrom_slim import col
+```
+
 ### Methods
 - 1 -> 1
   - pass_none
@@ -281,6 +272,12 @@ performance
 
 ## func
 
+import func like this
+
+```python
+from QfromPackage.Qfrom_slim import func
+```
+
 ### Methods
 - __ call __(func, in: int, out: int) -> verpackt func in lambda, so dass lambda-parameter in-count entsprechen und output tuple out-count entspricht.
 - vec(func) -> vectorize func, autodetect in and out counts
@@ -293,6 +290,12 @@ performance
 ---
 
 ## agg
+
+import agg like this
+
+```python
+from QfromPackage.Qfrom_slim import agg
+```
 
 ### Methods
 - any
@@ -316,6 +319,12 @@ performance
 
 ## plot
 
+import plot like this
+
+```python
+from QfromPackage.Qfrom_slim import plot
+```
+
 ### Methods
 - plot
 - bar
@@ -329,6 +338,12 @@ performance
 ---
 
 ## out
+
+import out like this
+
+```python
+from QfromPackage.Qfrom_slim import out
+```
 
 ### Methods
 - tolist
@@ -348,6 +363,12 @@ performance
 ---
 
 ## trans
+
+import trans like this
+
+```python
+from QfromPackage.Qfrom_slim import trans
+```
 
 ### Methods
 - (shuffle)
