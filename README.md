@@ -38,7 +38,18 @@ This Project is based on Python 3.10.0
   - [remove](#remove)
   - [rename](#rename)
   - [select](#select)
+    - [string](#string)
+    - [dynamic column selection](#dynamic-column-selection)
+    - [tuple](#tuple)
   - [map](#map)
+    - [out not specified](#out-not-specified)
+    - [args not specified](#args-not-specified)
+    - [args dynamic column selection](#args-dynamic-column-selection)
+    - [func not specified respectively copying column](#func-not-specified-respectively-copying-column)
+    - [vectorize function](#vectorize-function)
+    - [function returning multiple columns](#function-returning-multiple-columns)
+    - [function returning a scalar](#function-returning-a-scalar)
+    - [function returning a generator](#function-returning-a-generator)
   - [orderby](#orderby)
   - [where](#where)
   - [groupy](#groupy)
@@ -168,7 +179,7 @@ Qfrom(l)
 ```
 ```
 > Qfrom
-> y1 y2
+> y0 y1
 > 1	4
 > 2	5
 > 3	6
@@ -231,7 +242,7 @@ Qfrom(mtx)
 ```
 ```
 > Qfrom
-> y1    y2
+> y0    y1
 > 1 4
 > 2 5
 > 3 6
@@ -563,7 +574,7 @@ q['a,c']
 > 3 9
 ```
 
-it is possible to use dynamic column selection. More information in section [select](#select)
+it is possible to use dynamic column selection. More information in section [dynamic column selection](#dynamic-column-selection)
 ```python
 q = Qfrom({
     'a': [1, 2, 3],
@@ -700,7 +711,7 @@ q.remove('a, c')
 > 6	12	15
 ```
 
-it is possible to use dynamic column selection. More information in section [select](#select)
+it is possible to use dynamic column selection. More information in section [dynamic column selection](#dynamic-column-selection)
 ```python
 q = Qfrom({
     'a': [1, 2, 3],
@@ -747,7 +758,349 @@ q.rename({'b': 'c'})
 
 ## select
 
+### string
+```python
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6],
+    'c': [7, 8, 9],
+    'd': [10, 11, 12],
+    'e': [13, 14, 15],
+    })
+q.select('a')
+```
+```
+> Qfrom
+> a
+> 1
+> 2
+> 3
+```
+
+select multiple columns
+```python
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6],
+    'c': [7, 8, 9],
+    'd': [10, 11, 12],
+    'e': [13, 14, 15],
+    })
+q.select('a, c')
+```
+```
+> Qfrom
+> a	c
+> 1	7
+> 2	8
+> 3	9
+```
+
+### dynamic column selection
+
+... notation for a slice of the keys
+```python
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6],
+    'c': [7, 8, 9],
+    'd': [10, 11, 12],
+    'e': [13, 14, 15],
+    })
+q.select('...,c')
+```
+```
+> Qfrom
+> a	b	c
+> 1	4	7
+> 2	5	8
+> 3	6	9
+```
+
+```python
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6],
+    'c': [7, 8, 9],
+    'd': [10, 11, 12],
+    'e': [13, 14, 15],
+    })
+q.select('b,...,d')
+```
+```
+> Qfrom
+> a	b	c	d
+> 1	4	7	10
+> 2	5	8	11
+> 3	6	9	12
+```
+
+. will be replaced by next occuring key
+```python
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6],
+    'c': [7, 8, 9],
+    'd': [10, 11, 12],
+    'e': [13, 14, 15],
+    })
+q.select('a,.,c')
+```
+```
+> Qfrom
+> a	b	c
+> 1	4	7
+> 2	5	8
+> 3	6	9
+```
+
+\* will be replaced by all keys
+```python
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6],
+    'c': [7, 8, 9],
+    'd': [10, 11, 12],
+    'e': [13, 14, 15],
+    })
+q.select('*')
+```
+```
+> Qfrom
+> a	b	c	d	e
+> 1	4	7	10	13
+> 2	5	8	11	14
+> 3	6	9	12	15
+```
+
+### tuple
+```python
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6],
+    'c': [7, 8, 9],
+    'd': [10, 11, 12],
+    'e': [13, 14, 15],
+    })
+q.select(('a', 'c'))
+```
+```
+> Qfrom
+> a	c
+> 1	7
+> 2	8
+> 3	9
+```
+
 ## map
+
+args
+- args: str | tuple[str] | list[str] = None,
+  
+    -> determents which columns will be passed to func
+- func: callable = None,
+
+    -> function mappes passed columns to one or more new columns
+- out: str | tuple[str] | list[str] = None
+
+    -> names for the output columns
+- return: Qfrom
+
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q.map('a,b', lambda x,y: x+y, 'c')
+```
+```
+> Qfrom
+> a	b	c
+> 1	4	5
+> 2	5	7
+> 3	6	9
+```
+
+### out not specified
+
+if out is not speecified the result will be written into the first column from the specified args
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q.map('a,b', lambda x,y: x+y)
+```
+```
+> Qfrom
+> a	b
+> 5	4
+> 7	5
+> 9	6
+```
+
+### args not specified
+
+if args is not speecified the passed columns will be choosen by ne names of arguments from the given function.
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q.map(func=lambda b,a: b+a, out='c')
+```
+```
+> Qfrom
+> a	b	c
+> 1	4	5
+> 2	5	7
+> 3	6	9
+```
+
+if * notation is used in the args of the given function, all not used columns will be passed to the function.
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6], 'c': [7, 8, 9]})
+q.map(func=lambda a, *args: a+sum(args), out='d')
+```
+```
+> Qfrom
+> a	b	c	d
+> 1	4	7	12
+> 2	5	8	15
+> 3	6	9	18
+```
+
+if ** notation is used  in the args of the given function, all not used columns will be passed as a dict to the function.
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6], 'c': [7, 8, 9]})
+q.map(func=lambda a, **kwrgs: kwrgs['c'], out='d')
+```
+```
+> Qfrom
+> a	b	c	d
+> 1	4	7	7
+> 2	5	8	8
+> 3	6	9	9
+```
+
+### args dynamic column selection
+
+it is possible to use dynamic column selection to specify the parameter args. More information in section [dynamic column selection](#dynamic-column-selection)
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6], 'c': [7, 8, 9]})
+q.map('*', lambda x, *args: x+sum(args), out='d')
+```
+```
+> Qfrom
+> a	b	c	d
+> 1	4	7	12
+> 2	5	8	15
+> 3	6	9	18
+```
+
+### func not specified respectively copying column
+
+if func is not specified map will write the selected columns to the specified out keys
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q.map('a, b', out='c, d')
+```
+```
+> Qfrom
+> a	b	c	d
+> 1	4	1	4
+> 2	5	2	5
+> 3	6	3	6
+```
+
+### vectorize function
+
+by default the columns which will be passed to the function are of type np.ndarray. if the given function is defined vor single element, not for whole columns, the function must first be vectorized. More information in section [vec](#vec)
+```python
+q = Qfrom({'a': ['ab', 'cd', 'fg']})
+q.map('a', func.vec(lambda x: x.upper()))
+```
+```
+> Qfrom
+> a
+> AB
+> CD
+> FG
+```
+
+### function returning multiple columns
+
+if a function is returning a tuple or a dict of np.ndarray the result will be treated as multible columns.
+```python
+q = Qfrom({'a': [1, 2, 3]})
+q.map('a', lambda x: (x+1, x+2))
+```
+```
+> Qfrom
+> a	a0	a1
+> 1	2	3
+> 2	3	4
+> 3	4	5
+```
+
+```python
+q = Qfrom({'a': [1, 2, 3]})
+q.map('a', lambda x: {'b': x+1, 'c': x+2})
+```
+```
+> Qfrom
+> a	a0	a1
+> 1	2	3
+> 2	3	4
+> 3	4	5
+```
+
+multible keys can be specified in the out parameter
+```python
+q = Qfrom({'a': [1, 2, 3]})
+q.map('a', lambda x: (x+1, x+2), 'b, c')
+```
+```
+> Qfrom
+> a	b	c
+> 1	2	3
+> 2	3	4
+> 3	4	5
+```
+
+### function returning a scalar
+
+if the function is returning a scalar insted of a np.ndarray, the scalar will be broadcasted to a np.ndarray of the size of a column
+```python
+q = Qfrom({'a': [1, 2, 3]})
+q.map(func=lambda: 1, out='b')
+```
+```
+> Qfrom
+> a	b
+> 1	1
+> 2	1
+> 3	1
+```
+
+### function returning a generator
+
+if the function is returning a generator insted of a np.ndarray, map will pull as many elements from the generator as needed to fill a np.ndarray of the size of a column
+```python
+q = Qfrom({'a': [1, 2, 3]})
+q.map(func=lambda: (c for c in 'python'), out='b')
+```
+```
+> Qfrom
+> a	b
+> 1	p
+> 2	y
+> 3	t
+```
+
+using the generator col.id is a simple way to get a id column. More information in section [id](#id)
+```python
+q = Qfrom({'a': [1, 2, 3]})
+q.map(func=col.id, out='i')
+```
+```
+> Qfrom
+> a	i
+> 1	0
+> 2	1
+> 3	2
+```
 
 ## orderby
 
