@@ -34,16 +34,18 @@ import numpy as np
 import pandas as pd
 ```
 
+[Contents](#contents)
+
 ---
 
 ## Qfrom
 
 ### Methods
- - import_list
- - import_dict
- - (import_set)
- - (import_array)
- - (import_mtx)
+ - [import list](#import-list)
+ - [import dict](#import-dict)
+ - [import set](#import-set)
+ - [import array](#import-array)
+ - [import matrix](#import-mtx)
  - import_dataframe
  - import_csv
  - (import_json)
@@ -88,6 +90,96 @@ import pandas as pd
  - calc
  - call
 
+
+### import list
+```python
+l = [1, 2, 3]
+Qfrom(l)
+```
+```
+> Qfrom
+> 0
+> 1
+> 2
+> 3
+```
+```python
+l = [(1, 4), (2, 5), (3, 6)]
+Qfrom(l)
+```
+```
+> Qfrom
+> 0 1
+> 1	4
+> 2	5
+> 3	6
+```
+```python
+l = [{'a': 1, 'b': 4}, {'a': 2, 'b': 5}, {'a': 3, 'b': 6}]
+Qfrom(l)
+```
+```
+> Qfrom
+> a	b
+> 1	4
+> 2	5
+> 3	6
+```
+
+### import dict
+```python
+d = {'a': [1, 2, 3], 'b': [4, 5, 6]}
+Qfrom(d)
+```
+```
+> Qfrom
+> a	b
+> 1	4
+> 2	5
+> 3	6
+```
+
+### import set
+```python
+s = {1, 2, 3}
+Qfrom(s)
+```
+```
+> Qfrom
+> 0
+> 1
+> 2
+> 3
+```
+
+### import array
+```python
+a = np.array([1, 2, 3])
+Qfrom(a)
+```
+```
+> Qfrom
+> 0
+> 1
+> 2
+> 3
+```
+
+### import matrix
+```python
+mtx = np.array([[1, 4], [2, 5], [3, 6]])
+Qfrom(mtx)
+```
+```
+> Qfrom
+> 0	1
+> 1	4
+> 2	5
+> 3	6
+```
+
+[Contents](#contents)
+
 ---
 
 ## col
@@ -128,6 +220,9 @@ n -> 1
 n -> m
  - ml_models
 
+
+[Contents](#contents)
+
 ---
 
 ## func
@@ -137,6 +232,9 @@ n -> m
  - vec(func) -> vectorize func, autodetect in and out counts
  - vec(func, in: int, out: int)
  - multicol(repetitioncount: int)
+
+
+[Contents](#contents)
 
 ---
 
@@ -157,6 +255,9 @@ n -> m
  - size
  - state(rules: func|dict[func]) -> returns the last state of col.state
 
+
+[Contents](#contents)
+
  ---
 
 ## plot
@@ -167,6 +268,9 @@ n -> m
  - hist
  - box
  - scatter
+
+
+[Contents](#contents)
 
 ---
 
@@ -184,9 +288,14 @@ n -> m
  - (tojson)
  - (tojsonfile)
 
+
+[Contents](#contents)
+
 ---
 
 ## trans
 
 ### Methods
  - (shuffle)
+
+[Contents](#contents)
