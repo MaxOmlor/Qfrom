@@ -898,8 +898,8 @@ class Qfrom():
         #return f'Qfrom({str(self.table_dict)})'
     # - repr
     def __repr__(self) -> str:
-        #return 'Qfrom(' + str(self.table_dict) + ')'
-        return str(self)
+        return 'Qfrom(' + str(self.table_dict) + ')'
+        #return str(self)
     # - append
     def append(self, item: Any|tuple|dict) -> None:
         operation = {
