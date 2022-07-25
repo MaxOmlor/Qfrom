@@ -14,6 +14,7 @@ This Project is based on Python 3.10.0
 - [plot](#plot)
 - [out](#out)
 - [trans](#trans)
+- [Performance Tests](#performance-tests)
 ---
 
 ## Qfrom
@@ -34,11 +35,14 @@ from QfromPackage.Qfrom_slim import Qfrom
 - [import csv](#import-csv)
 - [import json](#import-json)
 - [import generator](#import-generator)
-* eq
-* str
-* repr
-* append
-* setitem -> more dim slice support
+* [eq](#eq)
+* [str](#str)
+* [repr](#repr)
+* [append](#append)
+* [setitem](#setitem)
+  * [set row](#set-row)
+  * [set column](#set-column)
+  * [set cell](#set-cell)
 * getitem
 * contains
 * iter
@@ -219,7 +223,200 @@ Qfrom(range(3))
 > 2
 ```
 
-performance
+### eq
+```python
+q1 = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
+q2 = Qfrom([
+    {'a': 1, 'b': 4},
+    {'a': 2, 'b': 5},
+    {'a': 3, 'b': 6}
+])
+
+q1 == q2
+```
+```
+> True
+```
+
+### str
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+str(q)
+```
+```
+> 'Qfrom\na\tb\n1\t4\n2\t5\n3\t6'
+```
+
+### repr
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+print(q)
+```
+```
+> Qfrom
+> a	b
+> 1	4
+> 2	5
+> 3	6
+```
+
+### append
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+
+q.append((4, 7))
+q
+```
+```
+> Qfrom
+> a	b
+> 1	4
+> 2	5
+> 3	6
+> 4 7
+```
+
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+
+q.append({'a': 4, 'b':7})
+q
+```
+```
+> Qfrom
+> a	b
+> 1	4
+> 2	5
+> 3	6
+> 4 7
+```
+
+### setitem
+
+#### set row
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+
+q[1] = (7, 8)
+q
+```
+```
+> Qfrom
+> a	b
+> 1	4
+> 7 8
+> 3	6
+```
+
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+
+q[1] = {'a': 7, 'b': 8}
+q
+```
+```
+> Qfrom
+> a	b
+> 1	4
+> 7 8
+> 3	6
+```
+
+#### set column
+
+set single column
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+
+q['a'] = [7, 8, 9]
+q
+```
+```
+> Qfrom
+> a	b
+> 7	4
+> 8 5
+> 9	6
+```
+
+add new column
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+
+q['c'] = [7, 8, 9]
+q
+```
+```
+> Qfrom
+> a	b   c
+> 1	4   7
+> 2 5   8
+> 3	6   9
+```
+
+set multiple columns
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+
+q['a, b'] = [(4, 1), (5, 2), (6, 3)]
+q
+```
+```
+> Qfrom
+> a	b
+> 4	1
+> 5 2
+> 6	3
+```
+
+the order of the key-value-pairs in the dictionary does not matter.
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+
+q['a, b'] = {'b': [1, 2, 3], 'a': [4, 5, 6]}
+q
+```
+```
+> Qfrom
+> a	b
+> 4	1
+> 5 2
+> 6	3
+```
+
+
+#### set cell
+
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+
+q['a', 1] = 7
+q
+```
+```
+> Qfrom
+> a	b
+> 1	4
+> 7 5
+> 3	6
+```
+
+```python
+q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+
+q[1] = {'a': 7}
+q
+```
+```
+> Qfrom
+> a	b
+> 1	4
+> 7 5
+> 3	6
+```
 
 [Contents](#contents)
 
@@ -372,5 +569,12 @@ from QfromPackage.Qfrom_slim import trans
 
 ### Methods
 - (shuffle)
+
+[Contents](#contents)
+
+---
+
+## Performance Tests
+
 
 [Contents](#contents)
