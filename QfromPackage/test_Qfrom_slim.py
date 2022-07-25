@@ -399,6 +399,9 @@ class TestQfromClass(unittest.TestCase):
         self.assertEqual(q[1], (2, 5))
         self.assertEqual(q[1:], Qfrom({'a': [2, 3], 'b': [5, 6]}))
         self.assertEqual(q['a', 0], 1)
+        self.assertEqual(q['...,b'], q)
+        self.assertEqual(q['a,.'], q)
+        self.assertEqual(q['*'], q)
         #self.assertEqual(q[lambda a,i: (i,a), 'i,a'], Qfrom({'i':[0,1,2], 'a':[1,2,3]}))
     # - contains
     def test_contains(self):
