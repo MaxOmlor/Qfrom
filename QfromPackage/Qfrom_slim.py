@@ -851,10 +851,10 @@ class Qfrom():
                 collection.calculate()
                 self.table_dict = {key:np.copy(value) for key, value in collection.table_dict.items()}
             elif isinstance(collection, np.ndarray) and len(collection.shape) == 1:
-                self.table_dict = {'0': np.copy(collection)}
+                self.table_dict = {'y': np.copy(collection)}
             elif isinstance(collection, np.ndarray) and len(collection.shape) > 1:
                 collection_rot = np.rot90(collection)
-                self.table_dict = {str(i):col for i, col in enumerate(collection_rot[::-1])}
+                self.table_dict = {f'y{i+1}':col for i, col in enumerate(collection_rot[::-1])}
             elif isinstance(collection, pd.DataFrame):
                 self.table_dict = {key: collection[key].values for key in collection.columns}
             elif isinstance(collection, Iterable):
@@ -863,10 +863,12 @@ class Qfrom():
                     first_item = first(collection_list)
                     if isinstance(first_item, dict):
                         self.table_dict = {key: list_to_array([item[key] for item in collection_list]) for key in first_item.keys()}
-                    elif isinstance(first_item, tuple):
-                        self.table_dict = {str(i): list_to_array([item[i] for item in collection_list]) for i in range(len(first_item))}
+                    elif isinstance(first_item, tuple) and len(first_item) == 1:
+                        self.table_dict = {f'y': list_to_array([item[0] for item in collection_list])}
+                    elif isinstance(first_item, tuple) and len(first_item) > 1:
+                        self.table_dict = {f'y{i+1}': list_to_array([item[i] for item in collection_list]) for i in range(len(first_item))}
                     else:
-                        self.table_dict = {'0': list_to_array(collection_list)}
+                        self.table_dict = {'y': list_to_array(collection_list)}
         
         #test if all cols have the same length
         #first_len = len(first(self.table_dict.values()))

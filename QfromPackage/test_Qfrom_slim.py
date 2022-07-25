@@ -142,12 +142,12 @@ class TestQfromClass(unittest.TestCase):
                 return str(self)
         l3 = [t(1, 2, 3), t(2, 3, 4), t(3, 4, 5)]
         
-        q_result1 = Qfrom({'0': [1, 2, 3], '1': [4, 5, 6]})
+        q_result1 = Qfrom({'y1': [1, 2, 3], 'y2': [4, 5, 6]})
         q_result2 = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
         arr = np.empty(len(l3), dtype=object)
         for i, item in enumerate(l3):
             arr[i] = item
-        q_result3 = Qfrom({'0': arr})
+        q_result3 = Qfrom({'y': arr})
 
         self.assertEqual(Qfrom(l1), q_result1)
         self.assertEqual(Qfrom(l1)(out.list), l1)
@@ -160,6 +160,12 @@ class TestQfromClass(unittest.TestCase):
         self.assertEqual({key:list(col) for key,col in Qfrom(d)(out.dict).items()}, d)
     # - (import_set)
     # - (import_array)
+    def test_init_array(self):
+        a = np.array([1, 2, 3])
+
+        q_result = Qfrom({'y': [1, 2, 3]})
+
+        self.assertEqual(Qfrom(a), q_result)
     # - (import_mtx)
     # - import_dataframe
     def test_init_df(self):
@@ -187,7 +193,7 @@ class TestQfromClass(unittest.TestCase):
         g2 = ((i,) for i in range(3))
 
         q_result1 = Qfrom({'a': [0, 1, 2]})
-        q_result2 = Qfrom({'0': [0, 1, 2]})
+        q_result2 = Qfrom({'y': [0, 1, 2]})
 
         self.assertEqual(Qfrom(g1), q_result1)
         self.assertEqual(Qfrom(g2), q_result2)
