@@ -502,24 +502,24 @@ def join_cross_table_dict(table_dict, other):
     this_result_dict = {col_name:col[this_result_ids] for col_name, col in table_dict.items()}
     other_result_dict = {col_name:col[other_result_ids] for col_name, col in other.items()}
 
-    return {**this_result_dict, **other_result_dict}
+    return this_result_dict | other_result_dict
 def join_id_table_dict(table_dict, other, join_left_outer=False, join_right_outer=False):
     len_table_dict = len(first(table_dict.values()))
     len_other = len(first(other.values()))
     if len_table_dict == len_other:
-        return {**table_dict, **other}
+        return table_dict | other
     elif join_left_outer and len_table_dict > len_other:
         dif = len_table_dict - len_other
         none_list = np.full(dif, None)
-        return {**table_dict, **{key:np.append(col, none_list) for key, col in other.items()}}
+        return table_dict | {key:np.append(col, none_list) for key, col in other.items()}
     elif join_right_outer and len_table_dict < len_other:
         dif = len_other - len_table_dict
         none_list = np.full(dif, None)
-        return {**{key:np.append(col, none_list) for key, col in table_dict.items()}, **other}
+        return {key:np.append(col, none_list) for key, col in table_dict.items()} | other
     elif len_table_dict > len_other:
-        return {**{key:col[0:len_other] for key, col in table_dict.items()}, **other}
+        return {key:col[0:len_other] for key, col in table_dict.items()} | other
     else:
-        return {**table_dict, **{key:col[0:len_table_dict] for key, col in other.items()}}
+        return table_dict | {key:col[0:len_table_dict] for key, col in other.items()}
 def concat_table_dict(table_dict, other, join_outer_left, join_outer_right):
     if join_outer_left and join_outer_right:
         if len(table_dict) == 0:
@@ -636,7 +636,7 @@ def calc_operations(table_dict, operation_list):
 
                 args = trans_select(args, keys=result_dict.keys())
                 mapped_dict = map_table_dict(result_dict, args, func, out)
-                result_dict = {**result_dict, **mapped_dict}
+                result_dict = result_dict | mapped_dict
                 continue
             case Operation.ORDERBY:
                 if len(result_dict) == 0:
@@ -1273,6 +1273,45 @@ def reduce(iterable, f: callable):
 class col():
     # = 0 -> 1
     #   (- <Any> -> singleton to array)
+    #
+    # = 1 -> 1
+    #   - pass_none
+    #   - normalize
+    #   - abs
+    #   - center -> set a new origin for a column: [1, 2, 3], origin=2 -> [-1, 0, 1]
+    #   - shift(steps=...)
+    #   - not
+    #   - id
+    #
+    # = n -> 1
+    #   - any
+    #   - all
+    #   - min
+    #   - min_colname
+    #   - max
+    #   - max_colname
+    #   - sum
+    #   - mean
+    #   - median
+    #   - var
+    #   - eq
+    #   - agg(colcount) -> combines multible cols to one 2d col
+    #   - state(rules: func|dict[func]) -> iterates over col. for each item the result state of the last item is feed in. 
+    #   - lod_and
+    #   - lod_or
+    #   - lod_xor
+    #
+    # = 1 -> n
+    #   - copy(n)
+    #   - flatten -> autodetect out count
+    #
+    # = n -> m
+    #   - ml_models
+
+
+
+    # = 0 -> 1
+    #   (- <Any> -> singleton to array)
     #   - id
     @classmethod
     def id(cls):
@@ -1395,12 +1434,15 @@ class col():
                 result_l.append(current_state)
             return result_l
         return get_state_col
+    #   - lod_and
     @classmethod
     def log_and(cls, *arrays):
         return reduce(arrays, np.logical_and)
+    #   - lod_or
     @classmethod
     def log_or(cls, *arrays):
         return reduce(arrays, np.logical_or)
+    #   - lod_xor
     @classmethod
     def log_xor(cls, *arrays):
         return reduce(arrays, np.logical_xor)
@@ -1425,9 +1467,18 @@ class col():
     #
     # = n -> m
     #   - ml_models
-    pass
 
 class func():
+    # - __call__(func, in: int, out: int) -> verpackt func in lambda, so dass lambda-parameter in-count entsprechen und output tuple out-count entspricht.
+    # - vec(func) -> vectorize func, autodetect in and out counts
+    # - vec(func, in: int, out: int)
+    # - multicol(repetitioncount: int)
+    # (- args(func))
+    # (   -> ex. args(lambda a,b: a+b) -> {('a', 'b'): lambda a,b: a+b})
+    # (   -> ex. args(lambda a,b, *args: (a+b, *args)) -> {('a', 'b', '*'): lambda a,b, *args: (a+b, *args)})
+
+
+
     # - __call__(func, in: int, out: int) -> verpackt func in lambda, so dass lambda-parameter in-count entsprechen und output tuple out-count entspricht.
     # - vec(func) -> vectorize func, autodetect in and out counts
     # - vec(func, in: int, out: int)
@@ -1471,6 +1522,22 @@ class func():
     # (   -> ex. args(lambda a,b, *args: (a+b, *args)) -> {('a', 'b', '*'): lambda a,b, *args: (a+b, *args)})
 
 class agg():
+    # - any
+    # - all
+    # - min
+    # - min_id
+    # - max
+    # - max_id
+    # - sum
+    # - mean
+    # - median
+    # - var
+    # - len
+    # - size
+    # - state(rules: func|dict[func]) -> returns the last state of col.state
+
+
+
     # - any
     @classmethod
     def any(cls, array: np.ndarray):
@@ -1519,6 +1586,14 @@ class agg():
 
 class plot():
     # - plot
+    # - bar
+    # - hist
+    # - box
+    # - scatter
+    
+    
+    
+    # - plot
     @classmethod
     def plot(cls, q: Qfrom, x=None, show_legend=True, title=None, x_scale_log=False, y_scale_log=False, axis=None, figsize=None, order_by_x=True) -> None:
         q.calculate()
@@ -1562,6 +1637,19 @@ class plot():
     pass
 
 class out():
+    # - tolist
+    # - (toset)
+    # - todict
+    # - toarray
+    # - (tomtx)
+    # - todf
+    # - tocsv
+    # - (tocsvfile)
+    # - (tojson)
+    # - (tojsonfile)
+
+
+
     # - tolist
     @classmethod
     def list(cls, q: Qfrom) -> list:
