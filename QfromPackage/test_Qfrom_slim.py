@@ -142,7 +142,7 @@ class TestQfromClass(unittest.TestCase):
                 return str(self)
         l3 = [t(1, 2, 3), t(2, 3, 4), t(3, 4, 5)]
         
-        q_result1 = Qfrom({'y1': [1, 2, 3], 'y2': [4, 5, 6]})
+        q_result1 = Qfrom({'y0': [1, 2, 3], 'y1': [4, 5, 6]})
         q_result2 = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
         arr = np.empty(len(l3), dtype=object)
         for i, item in enumerate(l3):
@@ -251,7 +251,7 @@ class TestQfromClass(unittest.TestCase):
         q2 = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
         q1_result1 = Qfrom({'y': [1]})
         q1_result2 = Qfrom({'y': [1, 2]})
-        q1_result3 = Qfrom({'y1': [1], 'y2': [2]})
+        q1_result3 = Qfrom({'y0': [1], 'y1': [2]})
         q1_result4 = Qfrom({'a': [1], 'b': [2]})
         q2_result = Qfrom({'a': [1, 2, 3, 7], 'b': [4, 5, 6, 8]})
 
@@ -531,7 +531,7 @@ class TestQfromClass(unittest.TestCase):
         self.assertEqual(q.map(func=lambda c: {'c': c}), q)
         self.assertEqual(q.map('c', col.sum), q)
         self.assertEqual(q.map('a', out='d'), q_result6)
-        #self.assertEqual(q.map(func=lambda **kwrgs: kwrgs), q)
+        self.assertEqual(q.map(func=lambda **kwrgs: kwrgs), q)
         
         #self.assertEqual(q.map(func=lambda: (5,col.id), out='d,i'), q_result7)
         #self.assertEqual(q.map(func=lambda: {'d':5, 'i': col.id}), q_result7)

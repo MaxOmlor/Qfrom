@@ -355,7 +355,7 @@ def append_table_dict(table_dict: dict[str, np.ndarray], item):
         if len(table_dict) == 0 and len(item) == 1:
             return {'y': list_to_array([item[0]])}
         if len(table_dict) == 0:
-            return {f'y{i+1}': list_to_array([value]) for i, value in enumerate(item)}
+            return {f'y{i}': list_to_array([value]) for i, value in enumerate(item)}
         return {key:np.append(col, [item[i]]) for i, (key, col) in enumerate(table_dict.items())}
     
     if type(item) is dict:
@@ -854,7 +854,7 @@ class Qfrom():
                 self.table_dict = {'y': np.copy(collection)}
             elif isinstance(collection, np.ndarray) and len(collection.shape) > 1:
                 collection_rot = np.rot90(collection)
-                self.table_dict = {f'y{i+1}':col for i, col in enumerate(collection_rot[::-1])}
+                self.table_dict = {f'y{i}':col for i, col in enumerate(collection_rot[::-1])}
             elif isinstance(collection, pd.DataFrame):
                 self.table_dict = {key: collection[key].values for key in collection.columns}
             elif isinstance(collection, Iterable):
@@ -866,7 +866,7 @@ class Qfrom():
                     elif isinstance(first_item, tuple) and len(first_item) == 1:
                         self.table_dict = {f'y': list_to_array([item[0] for item in collection_list])}
                     elif isinstance(first_item, tuple) and len(first_item) > 1:
-                        self.table_dict = {f'y{i+1}': list_to_array([item[i] for item in collection_list]) for i in range(len(first_item))}
+                        self.table_dict = {f'y{i}': list_to_array([item[i] for item in collection_list]) for i in range(len(first_item))}
                     else:
                         self.table_dict = {'y': list_to_array(collection_list)}
         
