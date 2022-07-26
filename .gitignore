@@ -1,3 +1,9 @@
 *.csv
 *.json
 *.cpython-310.pyc
+
+/PyBasicsPackage
+
+tmp_func.py
+Check Checklist Compact.ipynb
+Check Checklist Qfrom.ipynb
