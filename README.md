@@ -173,18 +173,26 @@ Qfrom(l)
 > 3
 ```
 ```python
-l = [(1, 4), (2, 5), (3, 6)]
+l = [
+    (1, 4),
+    (2, 5),
+    (3, 6)
+    ]
 Qfrom(l)
 ```
 ```
 > Qfrom
-> y0 y1
+> y0	y1
 > 1	4
 > 2	5
 > 3	6
 ```
 ```python
-l = [{'a': 1, 'b': 4}, {'a': 2, 'b': 5}, {'a': 3, 'b': 6}]
+l = [
+    {'a': 1, 'b': 4},
+    {'a': 2, 'b': 5},
+    {'a': 3, 'b': 6}
+    ]
 Qfrom(l)
 ```
 ```
@@ -201,7 +209,10 @@ Qfrom(l)
 
 ## import dict
 ```python
-d = {'a': [1, 2, 3], 'b': [4, 5, 6]}
+d = {
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+    }
 Qfrom(d)
 ```
 ```
@@ -252,15 +263,19 @@ Qfrom(a)
 
 ## import matrix
 ```python
-mtx = np.array([[1, 4], [2, 5], [3, 6]])
+mtx = np.array([
+    [1, 4],
+    [2, 5],
+    [3, 6]
+    ])
 Qfrom(mtx)
 ```
 ```
 > Qfrom
-> y0    y1
-> 1 4
-> 2 5
-> 3 6
+> y0	y1
+> 1	4
+> 2	5
+> 3	6
 ```
 
 [Contents](#contents)
@@ -269,7 +284,10 @@ Qfrom(mtx)
 
 ## import DataFrame
 ```python
-df = pd.DataFrame({'a': [1, 2, 3], 'b': [4, 5, 6]})
+df = pd.DataFrame({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+    })
 Qfrom(df)
 ```
 ```
@@ -292,7 +310,6 @@ a,b
 2,5
 3,6
 '''
-
 Qfrom(csv)
 ```
 ```
@@ -309,7 +326,12 @@ Qfrom(csv)
 
 ## import json
 ```python
-json = "{'a': [1, 2, 3], 'b': [4, 5, 6]}"
+json = """
+{
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+}
+"""
 Qfrom(json)
 ```
 ```
@@ -364,7 +386,10 @@ q1 == q2
 
 ## str
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 str(q)
 ```
 ```
@@ -377,7 +402,10 @@ str(q)
 
 ## repr
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 print(q)
 ```
 ```
@@ -394,7 +422,10 @@ print(q)
 
 ## append
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 
 q.append((4, 7))
 q
@@ -405,11 +436,14 @@ q
 > 1	4
 > 2	5
 > 3	6
-> 4 7
+> 4	7
 ```
 
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 
 q.append({'a': 4, 'b':7})
 q
@@ -420,7 +454,7 @@ q
 > 1	4
 > 2	5
 > 3	6
-> 4 7
+> 4	7
 ```
 
 [Performance test](#append-1)
@@ -433,7 +467,10 @@ q
 
 ### set row
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 
 q[1] = (7, 8)
 q
@@ -442,12 +479,15 @@ q
 > Qfrom
 > a	b
 > 1	4
-> 7 8
+> 7	8
 > 3	6
 ```
 
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 
 q[1] = 7, 8
 q
@@ -456,12 +496,15 @@ q
 > Qfrom
 > a	b
 > 1	4
-> 7 8
+> 7	8
 > 3	6
 ```
 
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 
 q[1] = {'a': 7, 'b': 8}
 q
@@ -470,7 +513,7 @@ q
 > Qfrom
 > a	b
 > 1	4
-> 7 8
+> 7	8
 > 3	6
 ```
 
@@ -478,7 +521,10 @@ q
 
 set single column
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 
 q['a'] = [7, 8, 9]
 q
@@ -487,28 +533,34 @@ q
 > Qfrom
 > a	b
 > 7	4
-> 8 5
+> 8	5
 > 9	6
 ```
 
 add new column
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 
 q['c'] = [7, 8, 9]
 q
 ```
 ```
 > Qfrom
-> a	b   c
-> 1	4   7
-> 2 5   8
-> 3	6   9
+> a	b	c
+> 1	4	7
+> 2	5	8
+> 3	6	9
 ```
 
 set multiple columns
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 
 q['a, b'] = [(4, 1), (5, 2), (6, 3)]
 q
@@ -517,13 +569,16 @@ q
 > Qfrom
 > a	b
 > 4	1
-> 5 2
+> 5	2
 > 6	3
 ```
 
 the order of the key-value-pairs in the dictionary does not matter.
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 
 q['a, b'] = {'b': [1, 2, 3], 'a': [4, 5, 6]}
 q
@@ -532,7 +587,7 @@ q
 > Qfrom
 > a	b
 > 4	1
-> 5 2
+> 5	2
 > 6	3
 ```
 
@@ -540,7 +595,10 @@ q
 ### set cell
 
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 
 q['a', 1] = 7
 q
@@ -549,12 +607,15 @@ q
 > Qfrom
 > a	b
 > 1	4
-> 7 5
+> 7	5
 > 3	6
 ```
 
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 
 q[1] = {'a': 7}
 q
@@ -563,7 +624,7 @@ q
 > Qfrom
 > a	b
 > 1	4
-> 7 5
+> 7	5
 > 3	6
 ```
 
@@ -577,7 +638,10 @@ q
 
 ### get row
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 
 print(q[1])
 
@@ -591,7 +655,10 @@ print(f'{a=}, {b=}')
 
 it is posssible to use slice notation. the result is returned as a new Qfrom.
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 q[1:]
 ```
 ```
@@ -603,7 +670,10 @@ q[1:]
 
 ### get column
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 q['a']
 ```
 ```
@@ -622,7 +692,7 @@ q = Qfrom({
     'c': [7, 8, 9],
     'd': [10, 11, 12],
     'e': [13, 14, 15],
-    })
+})
 q['a,c']
 ```
 ```
@@ -641,7 +711,7 @@ q = Qfrom({
     'c': [7, 8, 9],
     'd': [10, 11, 12],
     'e': [13, 14, 15],
-    })
+})
 q['...,c']
 ```
 ```
@@ -655,7 +725,10 @@ q['...,c']
 
 ### get cell
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 q['a', 0]
 ```
 ```
@@ -668,7 +741,10 @@ q['a', 0]
 
 ## contains
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 (2, 5) in q
 ```
 ```
@@ -677,7 +753,10 @@ q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
 
 the order of the key-value-pairs in the dictionary does not matter.
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 {'b':5, 'a': 2} in q
 ```
 ```
@@ -690,7 +769,10 @@ q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
 
 ## iter
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 
 for a, b in q:
     print(a, b)
@@ -709,7 +791,10 @@ for a, b in q:
 
 ## len
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 len(q)
 ```
 ```
@@ -722,7 +807,10 @@ len(q)
 
 ## keys
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 
 for k in q.keys():
     print(k)
@@ -738,7 +826,10 @@ for k in q.keys():
 
 ## values
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 
 for v in q.values():
     print(v)
@@ -754,7 +845,10 @@ for v in q.values():
 
 ## items
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 
 for v in q.values():
     print(v)
@@ -770,7 +864,10 @@ for v in q.values():
 
 ## remove
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 q.remove('a')
 ```
 ```
@@ -789,7 +886,7 @@ q = Qfrom({
     'c': [7, 8, 9],
     'd': [10, 11, 12],
     'e': [13, 14, 15],
-    })
+})
 q.remove('a, c')
 ```
 ```
@@ -808,7 +905,7 @@ q = Qfrom({
     'c': [7, 8, 9],
     'd': [10, 11, 12],
     'e': [13, 14, 15],
-    })
+})
 q.remove('...,c')
 ```
 ```
@@ -825,7 +922,10 @@ q.remove('...,c')
 
 ## rename
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 q.rename({'b': 'c'})
 ```
 ```
@@ -838,7 +938,10 @@ q.rename({'b': 'c'})
 
 rename multiple columns
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 q.rename({'b': 'c'})
 ```
 ```
@@ -871,7 +974,7 @@ q = Qfrom({
     'c': [7, 8, 9],
     'd': [10, 11, 12],
     'e': [13, 14, 15],
-    })
+})
 q.select('a')
 ```
 ```
@@ -890,7 +993,7 @@ q = Qfrom({
     'c': [7, 8, 9],
     'd': [10, 11, 12],
     'e': [13, 14, 15],
-    })
+})
 q.select('a, c')
 ```
 ```
@@ -911,7 +1014,7 @@ q = Qfrom({
     'c': [7, 8, 9],
     'd': [10, 11, 12],
     'e': [13, 14, 15],
-    })
+})
 q.select('...,c')
 ```
 ```
@@ -929,7 +1032,7 @@ q = Qfrom({
     'c': [7, 8, 9],
     'd': [10, 11, 12],
     'e': [13, 14, 15],
-    })
+})
 q.select('b,...,d')
 ```
 ```
@@ -948,7 +1051,7 @@ q = Qfrom({
     'c': [7, 8, 9],
     'd': [10, 11, 12],
     'e': [13, 14, 15],
-    })
+})
 q.select('a,.,c')
 ```
 ```
@@ -967,7 +1070,7 @@ q = Qfrom({
     'c': [7, 8, 9],
     'd': [10, 11, 12],
     'e': [13, 14, 15],
-    })
+})
 q.select('*')
 ```
 ```
@@ -986,7 +1089,7 @@ q = Qfrom({
     'c': [7, 8, 9],
     'd': [10, 11, 12],
     'e': [13, 14, 15],
-    })
+})
 q.select(('a', 'c'))
 ```
 ```
@@ -1016,7 +1119,10 @@ args
 - return: Qfrom
 
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 q.map('a,b', lambda x,y: x+y, 'c')
 ```
 ```
@@ -1033,7 +1139,10 @@ q.map('a,b', lambda x,y: x+y, 'c')
 
 if out is not speecified the result will be written into the first column from the specified args
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 q.map('a,b', lambda x,y: x+y)
 ```
 ```
@@ -1048,7 +1157,10 @@ q.map('a,b', lambda x,y: x+y)
 
 if args is not speecified the passed columns will be choosen by ne names of arguments of the given function.
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 q.map(func=lambda b,a: b+a, out='c')
 ```
 ```
@@ -1061,7 +1173,11 @@ q.map(func=lambda b,a: b+a, out='c')
 
 if * notation is used in the args of the given function, all not used columns will be passed to the function.
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6], 'c': [7, 8, 9]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6],
+    'c': [7, 8, 9]
+})
 q.map(func=lambda a, *args: a+sum(args), out='d')
 ```
 ```
@@ -1074,7 +1190,11 @@ q.map(func=lambda a, *args: a+sum(args), out='d')
 
 if ** notation is used  in the args of the given function, all not used columns will be passed as a dict to the function.
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6], 'c': [7, 8, 9]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6],
+    'c': [7, 8, 9]
+})
 q.map(func=lambda a, **kwrgs: kwrgs['c'], out='d')
 ```
 ```
@@ -1089,7 +1209,11 @@ q.map(func=lambda a, **kwrgs: kwrgs['c'], out='d')
 
 it is possible to use dynamic column selection to specify the parameter args. More information in section [dynamic column selection](#dynamic-column-selection)
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6], 'c': [7, 8, 9]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6],
+    'c': [7, 8, 9]
+})
 q.map('*', lambda x, *args: x+sum(args), out='d')
 ```
 ```
@@ -1104,7 +1228,10 @@ q.map('*', lambda x, *args: x+sum(args), out='d')
 
 if func is not specified map will write the selected columns to the specified out keys
 ```python
-q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
 q.map('a, b', out='c, d')
 ```
 ```
