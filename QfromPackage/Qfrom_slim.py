@@ -863,9 +863,9 @@ class Qfrom():
                     first_item = first(collection_list)
                     if isinstance(first_item, dict):
                         self.table_dict = {key: list_to_array([item[key] for item in collection_list]) for key in first_item.keys()}
-                    elif isinstance(first_item, tuple) and len(first_item) == 1:
+                    elif (isinstance(first_item, tuple) or isinstance(first_item, list)) and len(first_item) == 1:
                         self.table_dict = {f'y': list_to_array([item[0] for item in collection_list])}
-                    elif isinstance(first_item, tuple) and len(first_item) > 1:
+                    elif (isinstance(first_item, tuple) or isinstance(first_item, list)) and len(first_item) > 1:
                         self.table_dict = {f'y{i}': list_to_array([item[i] for item in collection_list]) for i in range(len(first_item))}
                     else:
                         self.table_dict = {'y': list_to_array(collection_list)}
@@ -1275,6 +1275,7 @@ def reduce(iterable, f: callable):
 class col():
     # = 0 -> 1
     #   (- <Any> -> singleton to array)
+    #   - id
     #
     # = 1 -> 1
     #   - pass_none
@@ -1283,7 +1284,6 @@ class col():
     #   - center -> set a new origin for a column: [1, 2, 3], origin=2 -> [-1, 0, 1]
     #   - shift(steps=...)
     #   - not
-    #   - id
     #
     # = n -> 1
     #   - any
@@ -1370,8 +1370,8 @@ class col():
     #   - min_colname
     @classmethod
     def min_colname(cls, **kwrgs):
-        #array_tuple = np.array(list(kwrgs.values()))
-        array_tuple = iter_to_array(kwrgs.values())
+        array_tuple = np.array(list(kwrgs.values()))
+        #array_tuple = iter_to_array(kwrgs.values())
         ids = np.argmin(array_tuple, axis=0)
         #key_array = np.array(list(kwrgs.keys()))
         key_array = iter_to_array(kwrgs.keys())
@@ -1385,8 +1385,8 @@ class col():
     #   - max_colname
     @classmethod
     def max_colname(cls, **kwrgs):
-        #array_tuple = np.array(list(kwrgs.values()))
-        array_tuple = iter_to_array(kwrgs.values())
+        array_tuple = np.array(list(kwrgs.values()))
+        #array_tuple = iter_to_array(kwrgs.values())
         ids = np.argmax(array_tuple, axis=0)
         #key_array = np.array(list(kwrgs.keys()))
         key_array = iter_to_array(kwrgs.keys())

@@ -10,9 +10,24 @@ class TestColClass(unittest.TestCase):
     # = 1 -> 1
     #   - pass_none
     #   - normalize
+    def test_normalize(self):
+        a1 = np.array([1, 2, 3, 4])
+        a2 = np.array([1, -2, 3, -4])
+
+        result1 = np.array([.25, .5, .75, 1])
+        result2 = np.array([.25, -.5, .75, -1])
+
+        self.assertTrue(np.array_equal(col.normalize(a1), result1))
+        self.assertTrue(np.array_equal(col.normalize(a2), result2))
     #   - abs
     #   - center -> set a new origin for a column: [1, 2, 3], origin=2 -> [-1, 0, 1]
     #   - shift(steps=...)
+    def test_shift(self):
+        a1 = np.array([1, 2, 3, 4])
+
+        result1 = np.array([0, 1, 2, 3])
+
+        self.assertTrue(np.array_equal(col.shift(1, 0)(a1), result1))
     #   - not
     #   - id
     #
@@ -21,8 +36,22 @@ class TestColClass(unittest.TestCase):
     #   - all
     #   - min
     #   - min_colname
+    def test_min_colname(self):
+        a = np.array([1, 2, 3, 4])
+        b = np.array([4, 3, 2, 1])
+
+        result = np.array(['a', 'a', 'b', 'b'])
+
+        self.assertTrue(np.array_equal(col.min_colname(a=a, b=b), result))
     #   - max
     #   - max_colname
+    def test_max_colname(self):
+        a = np.array([1, 2, 3, 4])
+        b = np.array([4, 3, 2, 1])
+
+        result = np.array(['b', 'b', 'a', 'a'])
+
+        self.assertTrue(np.array_equal(col.max_colname(a=a, b=b), result))
     #   - sum
     #   - mean
     #   - median
