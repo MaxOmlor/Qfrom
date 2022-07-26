@@ -1784,13 +1784,49 @@ setup
 ## results
 
 ### append
+
+![](Images/append%20comparison.png)
+
 ### getitem
+
+![](Images/getitem%20comparison.png)
+
 ### iter
+
+![](Images/iter%20comparison.png)
+
 ### select
+
+![](Images/select%20comparison.png)
+
+![](Images/select%20mult%20col%20comparison.png)
+
 ### map
+
+![](Images/map%20add%20comparison.png)
+
+![](Images/map%20by%20func%20comparison.png)
+
+![](Images/map%20%20by%20func%202%20args%20comparison.png)
+
 ### orderby
+
+![](Images/orderby%20comparison.png)
+
+![](Images/orderby%20mult%20cols%20comparison.png)
+
 ### where
+
+![](Images/where%20comparison.png)
+
 ### groupby
+
+![](Images/groupby%20comparison.png)
+
+![](Images/groupby%20mult%20cols%20comparison.png)
+
 ### agg
+
+![](Images/agg%20comparison.png)
 
 [Contents](#contents)
