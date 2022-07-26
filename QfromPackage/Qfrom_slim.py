@@ -24,22 +24,18 @@ import time
 
 def first(iterable, predicate_func=None):
     if predicate_func:
-        for item in iterable:
-            if predicate_func(item):
-                return item
-        return None
+        return next((item for item in iterable if predicate_func(item)), None)
     return next(iter(iterable))
 
 def will_be_tranformed_to_array(data):
     class_dir = dir(type(data))
     return '__len__' in class_dir and '__getitem__' in class_dir
 def list_to_array(l: list):
-    if len(l) > 0 and will_be_tranformed_to_array(l[0]):
-        a = np.empty(len(l), dtype=object)
-        a[:] = l
-        return a
-    else:
+    if not l or not will_be_tranformed_to_array(l[0]):
         return np.array(l)
+    a = np.empty(len(l), dtype=object)
+    a[:] = l
+    return a
 def iter_to_array(iterable: Iterable):
     first_item = next(iter(iterable))
     if will_be_tranformed_to_array(first_item):
@@ -70,7 +66,8 @@ def split_list_by_value(list_to_split: list, value: Any) -> tuple:
 #def iter_table_dict(table_dict: dict):
 #    return iter_array_list(list(table_dict.values()))
 def iter_array_list(array_list: list[np.ndarray]) -> Iterable|None:
-    if len(array_list) == 0:
+    # sourcery skip: assign-if-exp
+    if not array_list:
         return None
     if len(array_list) == 1:
         return iter(array_list[0])
@@ -180,15 +177,12 @@ def parse_str_to_collection(text, delimiter=',', headers=True):
 
     col_text = text
     if os.path.exists(text):
-        f_rawdata = open(text, 'rb')
-        rawdata = f_rawdata.read()
-        f_rawdata.close()
+        with open(text, 'rb') as f_rawdata:
+            rawdata = f_rawdata.read()
         encoding = chardet.detect(rawdata)['encoding']
 
-        f_col_text = open(text, newline='', encoding=encoding)
-        col_text = f_col_text.read()
-        f_col_text.close()
-    
+        with open(text, newline='', encoding=encoding) as f_col_text:
+            col_text = f_col_text.read()
     return try_parse_str_to_collection(col_text, delimiter, headers)
 
 
@@ -238,7 +232,7 @@ def seperate_not_key_part(no_key_part) -> tuple:
     points_occured = False
 
     for item in no_key_part:
-        if '...' == item:
+        if item == '...':
             points_occured = True
             point_group.append(item)
         elif points_occured:
@@ -268,7 +262,7 @@ def trans_select(selection: str|tuple[str]|list[str], keys: tuple[str]) -> list[
     if selection is None:
         return None
     if type(selection) is str:
-        selection = tuple([item.strip() for item in selection.split(',')])
+        selection = tuple(item.strip() for item in selection.split(','))
     if type(keys) is not tuple:
         keys = tuple(keys)
     if all(s in keys for s in selection):
@@ -280,7 +274,7 @@ def trans_select(selection: str|tuple[str]|list[str], keys: tuple[str]) -> list[
     not_valid_keys = [key not in possible_keys for key in selection]
     if all(not_valid_keys):
         raise ValueError(f'{not_valid_keys} are no valid keys')
-    
+
     sep_select_t = seperate_keys_from_rest(selection)
     intervals = get_key_intervals(sep_select_t, keys)
 
@@ -295,7 +289,7 @@ def trans_select(selection: str|tuple[str]|list[str], keys: tuple[str]) -> list[
     sep_no_key_parts = [seperate_not_key_part(part) for part in no_key_parts]
     no_key_parts = partition_keys(sep_no_key_parts, intervals, keys)
 
-    key_parts = [part for part in key_parts]
+    #key_parts = list(key_parts)
     sep_select_t[::2] = no_key_parts
     sep_select_t[1::2] = key_parts
 
@@ -352,18 +346,16 @@ def key_array_to_value_counts(key_iter: Iterable):
 
 def append_table_dict(table_dict: dict[str, np.ndarray], item):
     if type(item) is tuple:
-        if len(table_dict) == 0 and len(item) == 1:
+        if not table_dict and len(item) == 1:
             return {'y': list_to_array([item[0]])}
-        if len(table_dict) == 0:
+        if not table_dict:
             return {f'y{i}': list_to_array([value]) for i, value in enumerate(item)}
         return {key:np.append(col, [item[i]]) for i, (key, col) in enumerate(table_dict.items())}
-    
+
     if type(item) is dict:
-        if len(table_dict) == 0:
-            return {key: list_to_array([value]) for key, value in item.items()}
-        return {key: np.append(col, [item[key]]) for key, col in table_dict.items()}
-    
-    if len(table_dict) == 0:
+        return {key: np.append(col, [item[key]]) for key, col in table_dict.items()} if table_dict else {key: list_to_array([value]) for key, value in item.items()}
+
+    if not table_dict:
         return {'y': list_to_array([item])}
     key, col = first(table_dict.items())
     return {key:np.append(col, [item])}
@@ -440,13 +432,13 @@ def map_table_dict(
     if type(func_result) is np.ndarray:
         return {'y': func_result}
 
-    if len(table_dict) > 0 and out is not None:
+    if table_dict and out is not None:
         first_col = first(table_dict.values())
         return {out[0]: list_to_array([func_result for _ in first_col])}
-    if len(table_dict) > 0 and len(args) > 0:
+    if table_dict and len(args) > 0:
         first_col = first(table_dict.values())
         return {args[0]: list_to_array([func_result for _ in first_col])}
-    if len(table_dict) > 0:
+    if table_dict:
         first_col = first(table_dict.values())
         return {'y': list_to_array([func_result for _ in first_col])}
 
@@ -517,46 +509,46 @@ def join_id_table_dict(table_dict, other, join_left_outer=False, join_right_oute
         none_list = np.full(dif, None)
         return {key:np.append(col, none_list) for key, col in table_dict.items()} | other
     elif len_table_dict > len_other:
-        return {key:col[0:len_other] for key, col in table_dict.items()} | other
+        return {key: col[:len_other] for key, col in table_dict.items()} | other
     else:
-        return table_dict | {key:col[0:len_table_dict] for key, col in other.items()}
+        return table_dict | {key: col[:len_table_dict] for key, col in other.items()}
 def concat_table_dict(table_dict, other, join_outer_left, join_outer_right):
     if join_outer_left and join_outer_right:
-        if len(table_dict) == 0:
+        if not table_dict:
             return other
-        if len(other) == 0:
+        if not other:
             return table_dict
         len_table_dict = len(first(table_dict.values()))
         len_other = len(first(other.values()))
-        return {key:np.append(
+        return {key: np.append(
             table_dict[key] if key in table_dict else np.full(len_table_dict, None),
             other[key] if key in other else np.full(len_other, None)
             ) for key in set(table_dict.keys()) | set(other.keys())}
     elif join_outer_left:
-        if len(table_dict) == 0:
+        if not table_dict:
             return table_dict
         len_table_dict = len(first(table_dict.values()))
         len_other = len(first(other.values()))
-        return {key:np.append(
+        return {key: np.append(
             col,
             other[key] if key in other else np.full(len_other, None)
             ) for key, col in table_dict.items()}
     elif join_outer_right:
-        if len(other) == 0:
+        if not other:
             return other
         len_table_dict = len(first(table_dict.values()))
         len_other = len(first(other.values()))
-        return {key:np.append(
+        return {key: np.append(
             table_dict[key] if key in table_dict else np.full(len_table_dict, None),
             col) for key, col in other.items()}
     else:
-        if len(table_dict) == 0:
+        if not table_dict:
             return table_dict
-        if len(other) == 0:
+        if not other:
             return other
         len_table_dict = len(first(table_dict.values()))
         len_other = len(first(other.values()))
-        return {key:np.append(table_dict[key], other[key]) for key in set(table_dict.keys()) & set(other.keys())}
+        return {key: np.append(table_dict[key], other[key]) for key in set(table_dict.keys()) & set(other.keys())}
 def order_by_table_dict(table_dict, keys_array_list, reverse):
     ids = None
     if len(keys_array_list) == 1:
@@ -565,14 +557,14 @@ def order_by_table_dict(table_dict, keys_array_list, reverse):
         ids = np.lexsort(keys_array_list[::-1])
 
     if reverse:
-        return {key:col[ids][::-1] for key, col in table_dict.items()}
-    return {key:col[ids] for key, col in table_dict.items()}
+        return {key: col[ids][::-1] for key, col in table_dict.items()}
+    return {key: col[ids] for key, col in table_dict.items()}
 def where_table_dict(table_dict, keys_array_list):
     filter_array = keys_array_list[0]
     if len(keys_array_list) > 1:
         filter_array = np.logical_and.reduce(keys_array_list)
     filter_array = np.where(filter_array)
-    return {key:col[filter_array] for key, col in table_dict.items()}
+    return {key: col[filter_array] for key, col in table_dict.items()}
 def group_by_table_dict(table_dict: dict[str, np.ndarray], key_iter: Iterable):
     group_ids_dict = group_by_dict(key_iter)
 
@@ -600,11 +592,10 @@ def get_keys_array_list(
     keys: Iterable,
     func: callable):
     selection = trans_select(selection, keys)
-    if func:
-        key_dict = map_table_dict(table_dict, selection, func)
-        return list(key_dict.values())
-    else:
+    if not func:
         return [table_dict[key] for key in selection]
+    key_dict = map_table_dict(table_dict, selection, func)
+    return list(key_dict.values())
 
 def calc_operations(table_dict, operation_list):
     result_dict = table_dict
@@ -836,13 +827,13 @@ class Qfrom():
     # - (import_json)
     # - import_generator
     def __init__(self, collection=None, operation_list=None, table_dict=None) -> Qfrom:
-        operation_list = operation_list if operation_list else []
+        operation_list = operation_list or []
         self.__operation_list = operation_list
-        
+
         if table_dict:
             self.table_dict = table_dict
         else:
-            self.table_dict = dict()
+            self.table_dict = {}
             if isinstance(collection, str):
                 self.table_dict = parse_iterables_to_arrays(parse_str_to_collection(collection))
             elif isinstance(collection, dict):
@@ -935,11 +926,10 @@ class Qfrom():
                 self.table_dict[columns[0]] = arr_set_value(self.table_dict[columns[0]], columns[1], newvalue)
                 return
             newvaluedict = newvalue
-            if type(newvaluedict) is list:
-                if len(columns) == 1:
-                    newvaluedict = {columns[0]: [row[0] for row in newvaluedict] if type(first(newvaluedict)) is tuple and len(first(newvaluedict)) == 1 else newvaluedict}
-                else:
-                    newvaluedict = {col:[row[i] for row in newvaluedict] for i, col in enumerate(columns)}
+            if type(newvaluedict) is list and len(columns) == 1:
+                newvaluedict = {columns[0]: [row[0] for row in newvaluedict] if type(first(newvaluedict)) is tuple and len(first(newvaluedict)) == 1 else newvaluedict}
+            elif type(newvaluedict) is list:
+                newvaluedict = {col: [row[i] for row in newvaluedict] for i, col in enumerate(columns)}
             if type(newvaluedict) is dict:
                 for col in columns:
                     self.table_dict[col] = np.array(newvaluedict[col])
@@ -1421,7 +1411,7 @@ class col():
     #   - agg(colcount) -> combines multible cols to one 2d col
     @classmethod
     def agg(cls, *arrays):
-        l = [t for t in zip(*arrays)]
+        l = list(zip(*arrays))
         a = np.empty(len(l), dtype=object)
         a[:] = l
         return a
@@ -1601,7 +1591,7 @@ class plot():
         q.calculate()
 
         ax = axis
-        if axis==None:
+        if axis is None:
             fig = plt.figure()
             if figsize:
                 fig.set_figwidth(figsize[0])
