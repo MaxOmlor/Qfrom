@@ -195,6 +195,10 @@ Qfrom(l)
 > 3	6
 ```
 
+[Contents](#contents)
+
+---
+
 ## import dict
 ```python
 d = {'a': [1, 2, 3], 'b': [4, 5, 6]}
@@ -207,6 +211,10 @@ Qfrom(d)
 > 2	5
 > 3	6
 ```
+
+[Contents](#contents)
+
+---
 
 ## import set
 ```python
@@ -221,6 +229,10 @@ Qfrom(s)
 > 3
 ```
 
+[Contents](#contents)
+
+---
+
 ## import array
 ```python
 a = np.array([1, 2, 3])
@@ -233,6 +245,10 @@ Qfrom(a)
 > 2
 > 3
 ```
+
+[Contents](#contents)
+
+---
 
 ## import matrix
 ```python
@@ -247,6 +263,10 @@ Qfrom(mtx)
 > 3 6
 ```
 
+[Contents](#contents)
+
+---
+
 ## import DataFrame
 ```python
 df = pd.DataFrame({'a': [1, 2, 3], 'b': [4, 5, 6]})
@@ -259,6 +279,10 @@ Qfrom(df)
 > 2	5
 > 3	6
 ```
+
+[Contents](#contents)
+
+---
 
 ## import csv
 ```python
@@ -279,6 +303,10 @@ Qfrom(csv)
 > 3	6
 ```
 
+[Contents](#contents)
+
+---
+
 ## import json
 ```python
 json = "{'a': [1, 2, 3], 'b': [4, 5, 6]}"
@@ -292,6 +320,10 @@ Qfrom(json)
 > 3	6
 ```
 
+[Contents](#contents)
+
+---
+
 ## import generator
 ```python
 Qfrom(range(3))
@@ -303,6 +335,10 @@ Qfrom(range(3))
 > 1
 > 2
 ```
+
+[Contents](#contents)
+
+---
 
 ## eq
 ```python
@@ -322,6 +358,10 @@ q1 == q2
 > True
 ```
 
+[Contents](#contents)
+
+---
+
 ## str
 ```python
 q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
@@ -330,6 +370,10 @@ str(q)
 ```
 > 'Qfrom\na\tb\n1\t4\n2\t5\n3\t6'
 ```
+
+[Contents](#contents)
+
+---
 
 ## repr
 ```python
@@ -343,6 +387,10 @@ print(q)
 > 2	5
 > 3	6
 ```
+
+[Contents](#contents)
+
+---
 
 ## append
 ```python
@@ -374,6 +422,10 @@ q
 > 3	6
 > 4 7
 ```
+
+[Contents](#contents)
+
+---
 
 ## setitem
 
@@ -513,6 +565,10 @@ q
 > 3	6
 ```
 
+[Contents](#contents)
+
+---
+
 ## getitem
 
 ### get row
@@ -602,6 +658,10 @@ q['a', 0]
 > 1
 ```
 
+[Contents](#contents)
+
+---
+
 ## contains
 ```python
 q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
@@ -620,6 +680,10 @@ q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
 > True
 ```
 
+[Contents](#contents)
+
+---
+
 ## iter
 ```python
 q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
@@ -633,6 +697,10 @@ for a, b in q:
 > 3 6
 ```
 
+[Contents](#contents)
+
+---
+
 ## len
 ```python
 q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
@@ -641,6 +709,10 @@ len(q)
 ```
 > 3
 ```
+
+[Contents](#contents)
+
+---
 
 ## keys
 ```python
@@ -654,6 +726,10 @@ for k in q.keys():
 > b
 ```
 
+[Contents](#contents)
+
+---
+
 ## values
 ```python
 q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
@@ -666,6 +742,10 @@ for v in q.values():
 > [4 5 6]
 ```
 
+[Contents](#contents)
+
+---
+
 ## items
 ```python
 q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
@@ -677,6 +757,10 @@ for v in q.values():
 > a [1 2 3]
 > b [4 5 6]
 ```
+
+[Contents](#contents)
+
+---
 
 ## remove
 ```python
@@ -729,6 +813,10 @@ q.remove('...,c')
 > 12	15
 ```
 
+[Contents](#contents)
+
+---
+
 ## rename
 ```python
 q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
@@ -754,6 +842,10 @@ q.rename({'b': 'c'})
 > 2	5
 > 3	6
 ```
+
+[Contents](#contents)
+
+---
 
 ## select
 
@@ -890,6 +982,10 @@ q.select(('a', 'c'))
 > 2	8
 > 3	9
 ```
+
+[Contents](#contents)
+
+---
 
 ## map
 
@@ -1101,6 +1197,10 @@ q.map(func=col.id, out='i')
 > 3	2
 ```
 
+[Contents](#contents)
+
+---
+
 ## orderby
 ```python
 data = [
@@ -1200,6 +1300,10 @@ q.orderby(func=lambda a: a%2)
 > 1	1	4
 ```
 
+[Contents](#contents)
+
+---
+
 ## where
 ```python
 q = Qfrom({
@@ -1264,6 +1368,10 @@ q.where(func=lambda c: c < 3)
 > True	1	1
 > False	1	2
 ```
+
+[Contents](#contents)
+
+---
 
 ## groupy
 ```python
@@ -1372,6 +1480,10 @@ q.flatten('b')
 > 2	6
 ```
 
+[Contents](#contents)
+
+---
+
 ## unique
 collects first appearing items in Qfrom with a unique key.
 ```python
@@ -1440,6 +1552,10 @@ q.value_counts('a, b')
 > (3, 7)	1
 ```
 
+[Contents](#contents)
+
+---
+
 ## agg
 if one function is passed to agg, the function will be applied to every column.
 ```python
@@ -1465,33 +1581,93 @@ q.agg((agg.max, agg.min))
 > (3, 4)
 ```
 
+[Contents](#contents)
+
+---
+
 ## join
+
+[Contents](#contents)
+
+---
 
 ## join cross
 
+[Contents](#contents)
+
+---
+
 ## join outer
+
+[Contents](#contents)
+
+---
 
 ## join outer left
 
+[Contents](#contents)
+
+---
+
 ## join outer right
+
+[Contents](#contents)
+
+---
 
 ## join id
 
+[Contents](#contents)
+
+---
+
 ## join id outer
+
+[Contents](#contents)
+
+---
 
 ## join id outer left
 
+[Contents](#contents)
+
+---
+
 ## join id outer right
+
+[Contents](#contents)
+
+---
 
 ## concat
 
+[Contents](#contents)
+
+---
+
 ## concat outer
+
+[Contents](#contents)
+
+---
 
 ## concat outer left
 
+[Contents](#contents)
+
+---
+
 ## concat outer right
 
+[Contents](#contents)
+
+---
+
 ## calculate
+
+[Contents](#contents)
+
+---
 
 ## call
 
@@ -1537,6 +1713,10 @@ q.map(func=col.id, out='id')
 > z	2
 ```
 
+[Contents](#contents)
+
+---
+
 ## 1 -> 1 functions
 function which resive one np.ndarray and return one np.ndarray of same lenght.
 
@@ -1570,6 +1750,10 @@ col.normalize(a)
 > array([ 0.25, -0.5 ,  0.75, -1.  ])
 ```
 
+[Contents](#contents)
+
+---
+
 ### abs
 ```python
 a = np.array([1, -2, 3, -4])
@@ -1578,6 +1762,10 @@ col.abs(a)
 ```
 > array([1, 2, 3, 4])
 ```
+
+[Contents](#contents)
+
+---
 
 ### shift
 ```python
@@ -1588,14 +1776,34 @@ col.shift(steps=1, default_value=0)(a)
 > array([0, 1, 2, 3])
 ```
 
+[Contents](#contents)
+
+---
+
 ### not
+
+[Contents](#contents)
+
+---
 
 ## n -> 1 functions
 function which resive one np.ndarray and return multiple np.ndarray of same lenght.
 
 ### any
+
+[Contents](#contents)
+
+---
 ### all
+
+[Contents](#contents)
+
+---
 ### min
+
+[Contents](#contents)
+
+---
 ### min_colname
 ```python
 a = np.array([1, 2, 3, 4])
@@ -1623,7 +1831,15 @@ q.map('*', col.min_colname, 'min')
 > 4	1	b
 ```
 
+[Contents](#contents)
+
+---
+
 ### max
+
+[Contents](#contents)
+
+---
 ### max_colname
 ```python
 a = np.array([1, 2, 3, 4])
@@ -1651,24 +1867,75 @@ q.map('*', col.max_colname, 'max')
 > 4	1	a
 ```
 
+[Contents](#contents)
+
+---
+
 ### sum
+
+[Contents](#contents)
+
+---
 ### mean
+
+[Contents](#contents)
+
+---
 ### median
+
+[Contents](#contents)
+
+---
 ### var
+
+[Contents](#contents)
+
+---
 ### eq
+
+[Contents](#contents)
+
+---
 ### agg
+
+[Contents](#contents)
+
+---
 ### state
+
+[Contents](#contents)
+
+---
 ### lod_and
+
+[Contents](#contents)
+
+---
 ### lod_or
+
+[Contents](#contents)
+
+---
 ### lod_xor
+
+[Contents](#contents)
+
+---
 
 ## 1 -> n functions
 ### copy
+
+[Contents](#contents)
+
+---
 ### flatten
+
+[Contents](#contents)
+
+---
 
 ## n -> m functions
 ### ml_models
-
 
 [Contents](#contents)
 
@@ -1683,8 +1950,11 @@ from QfromPackage.Qfrom_slim import func
 ```
 
 ## vec
-## multicol
 
+[Contents](#contents)
+
+---
+## multicol
 
 [Contents](#contents)
 
@@ -1699,19 +1969,66 @@ from QfromPackage.Qfrom_slim import agg
 ```
 
 ## any
-## all
-## min
-## min_id
-## max
-## max_id
-## sum
-## mean
-## median
-## var
-## len
-## size
-## state
 
+[Contents](#contents)
+
+---
+## all
+
+[Contents](#contents)
+
+---
+## min
+
+[Contents](#contents)
+
+---
+## min_id
+
+[Contents](#contents)
+
+---
+## max
+
+[Contents](#contents)
+
+---
+## max_id
+
+[Contents](#contents)
+
+---
+## sum
+
+[Contents](#contents)
+
+---
+## mean
+
+[Contents](#contents)
+
+---
+## median
+
+[Contents](#contents)
+
+---
+## var
+
+[Contents](#contents)
+
+---
+## len
+
+[Contents](#contents)
+
+---
+## size
+
+[Contents](#contents)
+
+---
+## state
 
 [Contents](#contents)
 
@@ -1726,11 +2043,26 @@ from QfromPackage.Qfrom_slim import plot
 ```
 
 ## plot
-## bar
-## hist
-## box
-## scatter
 
+[Contents](#contents)
+
+---
+## bar
+
+[Contents](#contents)
+
+---
+## hist
+
+[Contents](#contents)
+
+---
+## box
+
+[Contents](#contents)
+
+---
+## scatter
 
 [Contents](#contents)
 
@@ -1745,16 +2077,51 @@ from QfromPackage.Qfrom_slim import out
 ```
 
 ## list
-## set
-## dict
-## array
-## mtx
-## df
-## csv
-## csv file
-## json
-## json file
 
+[Contents](#contents)
+
+---
+## set
+
+[Contents](#contents)
+
+---
+## dict
+
+[Contents](#contents)
+
+---
+## array
+
+[Contents](#contents)
+
+---
+## mtx
+
+[Contents](#contents)
+
+---
+## df
+
+[Contents](#contents)
+
+---
+## csv
+
+[Contents](#contents)
+
+---
+## csv file
+
+[Contents](#contents)
+
+---
+## json
+
+[Contents](#contents)
+
+---
+## json file
 
 [Contents](#contents)
 
@@ -1839,6 +2206,10 @@ class setup():
         return list(iter_table_dict(data))
 ```
 
+[Contents](#contents)
+
+---
+
 ## runtime tests
 
 the different data manipulation methods get executed on multiple datasets of varying sizes
@@ -1901,6 +2272,10 @@ runtimes for max data set size n=10 000
 |qs	|0.492 s	|2.823%	|
 |l	|0.003 s	|0.016%	|
 
+[Contents](#contents)
+
+---
+
 ### getitem
 
 getitem method implementations
@@ -1936,6 +2311,10 @@ runtimes for max data set size n=100 000
 |df	|5.486 s	|38.089%	|
 |qs	|0.161 s	|1.119%	|
 |l	|0.119 s	|0.826%	|
+
+[Contents](#contents)
+
+---
 
 ### iter
 
@@ -1983,6 +2362,10 @@ runtimes for max data set size n=1 000 000
 |l	|0.044 s	|0.275%	|
 |np_mtx	|0.06 s	|0.375%	|
 
+[Contents](#contents)
+
+---
+
 ### select
 
 select method implementations
@@ -2013,6 +2396,7 @@ runtimes for max data set size n=1 000 000
 |qs	|0.0 s	|0%	|
 |l	|0.0 s	|0%	|
 
+---
 
 select multiple columns method implementations
 ```python
@@ -2041,6 +2425,10 @@ runtimes for max data set size n=10 000 000
 |df	|0.106 s	|0%	|
 |qs	|0.0 s	|0%	|
 |l	|0.0 s	|0%	|
+
+[Contents](#contents)
+
+---
 
 ### map
 
@@ -2074,6 +2462,7 @@ runtimes for max data set size n=10 000 000
 |qs	|0.008 s	|1.0%	|
 |l	|1.223 s	|152.791%	|
 
+---
 
 map by func method implementations
 ```python
@@ -2108,6 +2497,7 @@ runtimes for max data set size n=10 000 000
 |qs	|1.28 s	|0.993%	|
 |l	|2.547 s	|1.975%	|
 
+---
 
 map by func two arguments method implementations
 ```python
@@ -2153,6 +2543,10 @@ runtimes for max data set size n=1 000 000
 |df_lcph	|0.355 s	|1.575%	|
 |df_np	|0.194 s	|0.861%	|
 
+[Contents](#contents)
+
+---
+
 ### orderby
 
 orderby method implementations
@@ -2183,6 +2577,7 @@ runtimes for max data set size n=1 000 000
 |qs	|0.116 s	|1.242%	|
 |l	|1.156 s	|12.33%	|
 
+---
 
 orderby multiple columns method implementations
 ```python
@@ -2206,6 +2601,10 @@ runtimes for max data set size n=10 000 000
 |np	|8.315 s	|1.0%	|
 |df	|2.378 s	|0.286%	|
 |qs	|7.396 s	|0.889%	|
+
+[Contents](#contents)
+
+---
 
 ### where
 
@@ -2237,6 +2636,10 @@ runtimes for max data set size n=10 000 000
 |df	|0.619 s	|2.672%	|
 |qs	|0.232 s	|1.002%	|
 |l	|1.428 s	|6.166%	|
+
+[Contents](#contents)
+
+---
 
 ### groupby
 
@@ -2275,6 +2678,7 @@ runtimes for max data set size n=10 000 000
 |df	|0.627 s	|0.254%	|
 |qs	|7.511 s	|3.046%	|
 
+---
 
 groupby multiple columns method implementations
 ```python
@@ -2309,6 +2713,10 @@ runtimes for max data set size n=1 000 000
 |np	|3.431 s	|1.0%	|
 |df	|0.917 s	|0.267%	|
 |qs	|1.089 s	|0.318%	|
+
+[Contents](#contents)
+
+---
 
 ### agg
 
