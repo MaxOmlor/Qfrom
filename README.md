@@ -140,7 +140,7 @@ This Project is based on Python 3.10.0
   - [shuffle](#shuffle)
 - [Performance Tests](#performance-tests)
   - [setup](#setup)
-  - [results](#results)
+  - [runtime tests](#runtime-tests)
     - [append](#append-1)
     - [getitem](#getitem-1)
     - [iter](#iter-1)
@@ -1776,31 +1776,159 @@ from QfromPackage.Qfrom_slim import trans
 
 # Performance Tests
 
+In this section several modules for data manipulation will be getting compared. Therefore several common methods for data manipulation are getting explored in regard to there runtimes.
+
+The explored modules are numpy, pandas, python lists and Qfrom. 
+
 ## setup
 
-get_tab_data
-setup
+this section discripes the test data.
 
-## results
+data set generation
+```python
+def get_p(n):
+    return [1/(2**(i+1)) if i+1 != n else 1/(2**(i)) for i in range(n)]
+
+def get_tab_data(n):
+    name_list = ['Ann', 'Steven', 'Max', 'Jack', 'Julia', 'Clara', 'Emma', 'Bob', 'Anna' 'Lena']
+    job_list = ['employee', 'jobless', 'freelancer', 'artist', 'technician', 'leader', 'coach', 'manager']
+    max_age = 100
+    max_salary = 1_000_000
+
+    return {
+        'name': np.random.choice(name_list, n, p=get_p(len(name_list))),
+        'age': np.random.randint(max_age, size=n),
+        'job': np.random.choice(job_list, n, p=get_p(len(job_list))),
+        'salary': np.random.randint(max_salary, size=n),
+        }
+```
+
+How data gets transformed to meet the requirements of the different modules.
+```python
+class setup():
+    @classmethod
+    def np(cls, data: dict[str, numpy.ndarray]):
+        return {k: np.copy(v) for k,v in data.items()}
+    @classmethod
+    def np_tpl(cls, data: dict[str, numpy.ndarray]):
+        return ({k:np.copy(v) for k,v in data[0].items()}, *data[1:])
+    @classmethod
+    def np_mtx(cls, data: dict[str, numpy.ndarray]):
+        cols = list(data.values())
+        return np_ext.col_stack(cols)
+    @classmethod
+    def df(cls, data: dict[str, numpy.ndarray]):
+        return pd.DataFrame(data)
+    @classmethod
+    def df_tpl(cls, data: dict[str, numpy.ndarray]):
+        return (pd.DataFrame(data[0]), *data[1:])
+    @classmethod
+    def l(cls, data: dict[str, numpy.ndarray]):
+        return {key: list(col) for key, col in data.items()}
+    @classmethod
+    def l_tpl(cls, data: dict[str, numpy.ndarray]):
+        return ({key: list(col) for key, col in data[0].items()}, *data[1:])
+    @classmethod
+    def qs(cls, data: dict[str, numpy.ndarray]):
+        return Qfrom_slim(data)
+    @classmethod
+    def qs_tpl(cls, data: dict[str, numpy.ndarray]):
+        return (Qfrom_slim(data[0]), *data[1:])
+    @classmethod
+    def list_items(cls, data: dict[str, numpy.ndarray]):
+        return list(iter_table_dict(data))
+```
+
+## runtime tests
+
+the different data manipulation methods get executed on multiple datasets of varying sizes
 
 ### append
 
+append method implementations
+```python
+def append_np(data):
+    result = {
+        'name': np.array([data[0][0]]),
+        'age': np.array([data[0][1]]),
+        'job': np.array([data[0][2]]),
+        'salary': np.array([data[0][3]]),
+        }
+    for name, age, job, salary in data[1:]:
+        result['name'] = np.append(result['name'], [name])
+        result['name'] = np.append(result['age'], [age])
+        result['name'] = np.append(result['job'], [job])
+        result['name'] = np.append(result['salary'], [salary])
+    return result
+
+def append_df(data):
+    result = pd.DataFrame([data[0]], columns=['name', 'age', 'job', 'salary'])
+    for t in data[1:]:
+        row = pd.DataFrame([t], columns=['name', 'age', 'job', 'salary'])
+        result.append([row], ignore_index=True)
+    return result
+
+def append_qs(data):
+    result = Qfrom_slim()
+    for t in data:
+        result.append(t)
+    return result(out.dict)
+
+def append_l(data):
+    result = {
+        'name': [],
+        'age': [],
+        'job': [],
+        'salary': [],
+    }
+    for name, age, job, salary in data:
+        result['name'].append(name)
+        result['age'].append(age)
+        result['job'].append(job)
+        result['salary'].append(salary)
+    return result
+```
+
+measured runtimes dependend on the size of the input data sets
 ![](Images/append%20comparison.png)
 
-max data size: 10 000
+runtimes for max data set size n=10 000
 
 ||||
 |---|---|---|
-|np	|0.13 s	|1.0%	|
-|df	|6.795 s	|52.084%	|
-|qs	|0.496 s	|3.798%	|
-|l	|0.002 s	|0.015%	|
+|np	|0.174 s	|1.0%	|
+|df	|8.22 s	|47.184%	|
+|qs	|0.492 s	|2.823%	|
+|l	|0.003 s	|0.016%	|
 
 ### getitem
 
+getitem method implementations
+```python
+def getitem_np(t):
+    data, ids = t
+    for id in ids:
+        tuple(col[id] for col in data.values())
+
+def getitem_df(t):
+    df, ids = t
+    for id in ids:
+        df.iloc[id]
+
+def getitem_qs(t):
+    q, ids = t
+    for id in ids:
+        q[id]
+
+def getitem_l(t):
+    data, ids = t
+    for id in ids:
+        tuple(col[id] for col in data.values())
+```
+
 ![](Images/getitem%20comparison.png)
 
-max data size: 100 000
+runtimes for max data set size n=100 000
 
 ||||
 |---|---|---|
@@ -1811,9 +1939,41 @@ max data size: 100 000
 
 ### iter
 
+iter method implementations
+```python
+def iter_np(data):
+    row_count = 0
+    for _ in np.nditer(list(data.values()), flags=["refs_ok"]):
+        row_count += 1
+    return row_count
+def iter_np_mtx(data):
+    row_count = 0
+    for _ in np.nditer(data, flags=["refs_ok"]):
+        row_count += 1
+    return row_count
+
+def iter_df(df: pd.DataFrame):
+    row_count = 0
+    for _ in df.values:
+        row_count += 1
+    return row_count
+
+def iter_qs(q: Qfrom_slim):
+    row_count = 0
+    for _ in q:
+        row_count += 1
+    return row_count
+
+def iter_l(data):
+    row_count = 0
+    for _ in zip(*data.values()):
+        row_count += 1
+    return row_count
+```
+
 ![](Images/iter%20comparison.png)
 
-max data size: 1 000 000
+runtimes for max data set size n=1 000 000
 
 ||||
 |---|---|---|
@@ -1825,9 +1985,26 @@ max data size: 1 000 000
 
 ### select
 
+select method implementations
+```python
+cols = 'name'
+
+def select_np(data):
+    return {key:value for key, value in data.items() if key in cols}
+
+def select_df(df):
+    return df[cols]
+
+def select_qs(q: Qfrom_slim):
+    return q.select(cols)(out.dict)
+
+def select_l(data):
+    return {key:value for key, value in data.items() if key in cols}
+```
+
 ![](Images/select%20comparison.png)
 
-max data size: 1 000 000
+runtimes for max data set size n=1 000 000
 
 ||||
 |---|---|---|
@@ -1836,9 +2013,27 @@ max data size: 1 000 000
 |qs	|0.0 s	|0%	|
 |l	|0.0 s	|0%	|
 
+
+select multiple columns method implementations
+```python
+cols = ['name', 'age']
+
+def select_np(data):
+    return {key:value for key, value in data.items() if key in cols}
+
+def select_df(df):
+    return df[cols]
+
+def select_qs(q: Qfrom_slim):
+    return q.select(cols)(out.dict)
+
+def select_l(data):
+    return {key:value for key, value in data.items() if key in cols}
+```
+
 ![](Images/select%20mult%20col%20comparison.png)
 
-max data size: 10 000 000
+runtimes for max data set size n=10 000 000
 
 ||||
 |---|---|---|
@@ -1849,9 +2044,28 @@ max data size: 10 000 000
 
 ### map
 
+map add method implementations
+```python
+def map_add_np(data):
+    data['age'] = data['age']+10
+    return data
+
+def map_add_df(df: pd.DataFrame):
+    data['age'] = data['age']+10
+    return df
+
+def map_add_qs(q: Qfrom_slim):
+    q = q.map(func=lambda age: age+10)
+    return q(out.dict)
+
+def map_add_l(data):
+    data['age'] = [x+10 for x in data['age']]
+    return data
+```
+
 ![](Images/map%20add%20comparison.png)
 
-max data size: 10 000 000
+runtimes for max data set size n=10 000 000
 
 ||||
 |---|---|---|
@@ -1860,9 +2074,32 @@ max data size: 10 000 000
 |qs	|0.008 s	|1.0%	|
 |l	|1.223 s	|152.791%	|
 
+
+map by func method implementations
+```python
+def test_func(x): f'i am {x} years old'
+
+def map_func_np(data):
+    map_age = np.frompyfunc(test_func, 1, 1)
+    data['age'] = map_age(data['age'])
+    return data
+
+def map_func_df(df: pd.DataFrame):
+    df['age'] = df['age'].apply(test_func)
+    return df
+
+def map_func_qs(q: Qfrom_slim):
+    q = q.map('age', func.vec(test_func))
+    return q(out.dict)
+
+def map_func_l(data):
+    data['age'] = [test_func(x) for x in data['age']]
+    return data
+```
+
 ![](Images/map%20by%20func%20comparison.png)
 
-max data size: 10 000 000
+runtimes for max data set size n=10 000 000
 
 ||||
 |---|---|---|
@@ -1871,22 +2108,73 @@ max data size: 10 000 000
 |qs	|1.28 s	|0.993%	|
 |l	|2.547 s	|1.975%	|
 
+
+map by func two arguments method implementations
+```python
+def test_func(x, y): return f'My name is {x} and i am {y} years old'
+
+def map_func_np(data):
+    map_age = np.frompyfunc(test_func, 2, 1)
+    data['msg'] = map_age(data['name'], data['age'])
+    return data
+
+def map_func_df(df: pd.DataFrame):
+    df['msg'] = df.apply(lambda x: test_func(x['name'], x['age']), axis=1)
+    return df
+
+def map_func_qs(q: Qfrom_slim):
+    q = q.map('name, age', func.vec(test_func), 'msg')
+    return q(out.dict)
+
+def map_func_l(data):
+    data['msg'] = [test_func(*a) for a in zip(data['name'], data['age'])]
+    return data
+
+def map_func_df_lcph(df: pd.DataFrame):
+    df['msg'] = [test_func(*a) for a in zip(df['name'], df['age'])]
+    return df
+
+def map_func_df_np(df: pd.DataFrame):
+    map_age = np.frompyfunc(test_func, 2, 1)
+    df['msg'] = map_age(df['name'], df['age'])
+    return df
+```
+
 ![](Images/map%20%20by%20func%202%20args%20comparison.png)
 
-max data size: 1 000 000
+runtimes for max data set size n=1 000 000
 
 ||||
 |---|---|---|
-|np	|0.228 s	|1.0%	|
-|df	|7.123 s	|31.242%	|
-|qs	|10.355 s	|45.416%	|
-|l	|0.41 s	|1.796%	|
+|np	|0.225 s	|1.0%	|
+|df	|7.09 s	|31.476%	|
+|qs	|0.216 s	|0.959%	|
+|l	|0.404 s	|1.793%	|
+|df_lcph	|0.355 s	|1.575%	|
+|df_np	|0.194 s	|0.861%	|
 
 ### orderby
 
+orderby method implementations
+```python
+def orderby_np(data):
+    sorted_ids = np.argsort(data['age'])
+    return {key: value[sorted_ids] for key, value in data.items()}
+
+def orderby_df(df):
+    return df.sort_values('age')
+
+def orderby_qs(q: Qfrom_slim):
+    return q.orderby('age')(out.dict)
+
+def orderby_l(data):
+    sorted_ids = sorted(range(len(data['age'])), key=lambda x: data['age'][x])
+    return {key: [value[i] for i in sorted_ids] for key, value in data.items()}
+```
+
 ![](Images/orderby%20comparison.png)
 
-max data size: 1 000 000
+runtimes for max data set size n=1 000 000
 
 ||||
 |---|---|---|
@@ -1895,9 +2183,23 @@ max data size: 1 000 000
 |qs	|0.116 s	|1.242%	|
 |l	|1.156 s	|12.33%	|
 
+
+orderby multiple columns method implementations
+```python
+def orderby_mult_np(data):
+    sorted_ids = np.lexsort([data['age'], data['name']])
+    return {key:value[sorted_ids] for key, value in data.items()}
+
+def orderby_mult_df(df):
+    return df.sort_values(['name', 'age'])
+
+def orderby_mult_qs(q: Qfrom_slim):
+    return q.orderby('name, age')(out.dict)
+```
+
 ![](Images/orderby%20mult%20cols%20comparison.png)
 
-max data size: 10 000 000
+runtimes for max data set size n=10 000 000
 
 ||||
 |---|---|---|
@@ -1907,9 +2209,27 @@ max data size: 10 000 000
 
 ### where
 
+where method implementations
+```python
+def where_np(data):
+    job_filter = np.where(data['job']=='manager')
+    data = {key: value[job_filter] for key, value in data.items()}
+    return data
+
+def where_df(df):
+    return df[df['job']=='manager']
+
+def where_qs(q: Qfrom_slim):
+    return q.where('job', lambda x: x=="manager")(out.dict)
+
+def where_l(data):
+    job_filter = [i for i in range(len(data['job'])) if data['job'][i]=='manager']
+    return {key: [value[i] for i in job_filter] for key, value in data.items()}
+```
+
 ![](Images/where%20comparison.png)
 
-max data size: 10 000 000
+runtimes for max data set size n=10 000 000
 
 ||||
 |---|---|---|
@@ -1920,9 +2240,34 @@ max data size: 10 000 000
 
 ### groupby
 
+not easy compareable bacause pandas groupby is only returning ids.
+
+groupby method implementations
+```python
+cols = 'job'
+
+def groupby_np(data):
+    sorted_ids = np.argsort(data[cols])
+    sorted_key_array = data[cols][sorted_ids]
+    unique_keys, unique_key_ids = np.unique(sorted_key_array, return_index=True)
+    id_groups = np.split(sorted_ids, unique_key_ids[1:])
+    group_dict = {
+        'key': unique_keys,
+        'group': np.array([{key:col[ids] for key, col in data.items()} for ids in id_groups])
+        }
+
+    return group_dict
+
+def groupby_df(df: pd.DataFrame):
+    return df.groupby(cols).groups
+
+def groupby_qs(q: Qfrom_slim):
+    return q.groupby(cols)(out.dict)
+```
+
 ![](Images/groupby%20comparison.png)
 
-max data size: 10 000 000
+runtimes for max data set size n=10 000 000
 
 ||||
 |---|---|---|
@@ -1930,9 +2275,34 @@ max data size: 10 000 000
 |df	|0.627 s	|0.254%	|
 |qs	|7.511 s	|3.046%	|
 
+
+groupby multiple columns method implementations
+```python
+cols = ['job', 'name']
+
+def groupby_np(data):
+    sorted_ids = np.lexsort([data[c] for c in cols[::-1]])
+    sorted_key_array = array_tuple_to_tuple_array([c for k, c in data.items() if k in cols])
+    unique_keys, unique_key_ids = np.unique(sorted_key_array, return_index=True)
+    id_groups = np.split(sorted_ids, unique_key_ids[1:])
+    group_dict = {
+        'key': unique_keys,
+        'group': np.array([{key:col[ids] for key, col in data.items()} for ids in id_groups])
+        }
+    
+    return group_dict
+
+
+def groupby_df(df: pd.DataFrame):
+    return df.groupby(cols).groups
+
+def groupby_qs(q: Qfrom_slim):
+    return q.groupby(cols)(out.dict)
+```
+
 ![](Images/groupby%20mult%20cols%20comparison.png)
 
-max data size: 1 000 000
+runtimes for max data set size n=1 000 000
 
 ||||
 |---|---|---|
@@ -1942,9 +2312,24 @@ max data size: 1 000 000
 
 ### agg
 
+agg method implementations
+```python
+def agg_np(data):
+    return np.mean(data['age'])
+
+def agg_df(df: pd.DataFrame):
+    return df['age'].agg('mean')
+
+def agg_qs(q: Qfrom_slim):
+    return q['age'].agg(agg.mean)
+
+def agg_l(data):
+    return sum(data['age']) / len(data['age'])
+```
+
 ![](Images/agg%20comparison.png)
 
-max data size: 10 000 000
+runtimes for max data set size n=10 000 000
 
 ||||
 |---|---|---|
