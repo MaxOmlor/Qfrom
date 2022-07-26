@@ -1785,48 +1785,172 @@ setup
 
 ### append
 
-![append comparsion](Images/append%20comparison.png)
+![](Images/append%20comparison.png)
+
+max data size: 10 000
+
+||||
+|---|---|---|
+|np	|0.13 s	|1.0%	|
+|df	|6.795 s	|52.084%	|
+|qs	|0.496 s	|3.798%	|
+|l	|0.002 s	|0.015%	|
 
 ### getitem
 
-![get item comparsion](Images/getitem%20comparison.png)
+![](Images/getitem%20comparison.png)
+
+max data size: 100 000
+
+||||
+|---|---|---|
+|np	|0.144 s	|1.0%	|
+|df	|5.486 s	|38.089%	|
+|qs	|0.161 s	|1.119%	|
+|l	|0.119 s	|0.826%	|
 
 ### iter
 
 ![](Images/iter%20comparison.png)
 
+max data size: 1 000 000
+
+||||
+|---|---|---|
+|np	|0.16 s	|1.0%	|
+|df	|0.163 s	|1.015%	|
+|qs	|0.438 s	|2.736%	|
+|l	|0.044 s	|0.275%	|
+|np_mtx	|0.06 s	|0.375%	|
+
 ### select
 
 ![](Images/select%20comparison.png)
 
+max data size: 1 000 000
+
+||||
+|---|---|---|
+|np	|0.0 s	|0%	|
+|df	|0.0 s	|0%	|
+|qs	|0.0 s	|0%	|
+|l	|0.0 s	|0%	|
+
 ![](Images/select%20mult%20col%20comparison.png)
+
+max data size: 10 000 000
+
+||||
+|---|---|---|
+|np	|0.0 s	|0%	|
+|df	|0.106 s	|0%	|
+|qs	|0.0 s	|0%	|
+|l	|0.0 s	|0%	|
 
 ### map
 
 ![](Images/map%20add%20comparison.png)
 
+max data size: 10 000 000
+
+||||
+|---|---|---|
+|np	|0.008 s	|1.0%	|
+|df	|0.016 s	|2.05%	|
+|qs	|0.008 s	|1.0%	|
+|l	|1.223 s	|152.791%	|
+
 ![](Images/map%20by%20func%20comparison.png)
 
+max data size: 10 000 000
+
+||||
+|---|---|---|
+|np	|1.29 s	|1.0%	|
+|df	|2.021 s	|1.567%	|
+|qs	|1.28 s	|0.993%	|
+|l	|2.547 s	|1.975%	|
+
 ![](Images/map%20%20by%20func%202%20args%20comparison.png)
+
+max data size: 1 000 000
+
+||||
+|---|---|---|
+|np	|0.228 s	|1.0%	|
+|df	|7.123 s	|31.242%	|
+|qs	|10.355 s	|45.416%	|
+|l	|0.41 s	|1.796%	|
 
 ### orderby
 
 ![](Images/orderby%20comparison.png)
 
+max data size: 1 000 000
+
+||||
+|---|---|---|
+|np	|0.094 s	|1.0%	|
+|df	|0.155 s	|1.648%	|
+|qs	|0.116 s	|1.242%	|
+|l	|1.156 s	|12.33%	|
+
 ![](Images/orderby%20mult%20cols%20comparison.png)
+
+max data size: 10 000 000
+
+||||
+|---|---|---|
+|np	|8.315 s	|1.0%	|
+|df	|2.378 s	|0.286%	|
+|qs	|7.396 s	|0.889%	|
 
 ### where
 
 ![](Images/where%20comparison.png)
 
+max data size: 10 000 000
+
+||||
+|---|---|---|
+|np	|0.232 s	|1.0%	|
+|df	|0.619 s	|2.672%	|
+|qs	|0.232 s	|1.002%	|
+|l	|1.428 s	|6.166%	|
+
 ### groupby
 
 ![](Images/groupby%20comparison.png)
 
+max data size: 10 000 000
+
+||||
+|---|---|---|
+|np	|2.466 s	|1.0%	|
+|df	|0.627 s	|0.254%	|
+|qs	|7.511 s	|3.046%	|
+
 ![](Images/groupby%20mult%20cols%20comparison.png)
+
+max data size: 1 000 000
+
+||||
+|---|---|---|
+|np	|3.431 s	|1.0%	|
+|df	|0.917 s	|0.267%	|
+|qs	|1.089 s	|0.318%	|
 
 ### agg
 
 ![](Images/agg%20comparison.png)
+
+max data size: 10 000 000
+
+||||
+|---|---|---|
+|np	|0.005 s	|1.0%	|
+|df	|0.006 s	|1.2%	|
+|qs	|0.005 s	|1.0%	|
+|l	|0.372 s	|74.305%	|
 
 [Contents](#contents)
