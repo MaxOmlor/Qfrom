@@ -56,7 +56,7 @@ This Project is based on Python 3.10.0
   - [flatten](#flatten)
   - [unique](#unique)
   - [value counts](#value-counts)
-  - [aa](#aa)
+  - [agg](#agg)
   - [join](#join)
   - [join cross](#join-cross)
   - [join outer](#join-outer)
@@ -73,14 +73,13 @@ This Project is based on Python 3.10.0
   - [calculate](#calculate)
   - [call](#call)
 - [class col](#class-col)
+  - [0 -> 1 functions](#0---1-functions)
+    - [id](#id)
   - [1 -> 1 functions](#1---1-functions)
-    - [pass_none](#pass_none)
     - [normalize](#normalize)
     - [abs](#abs)
-    - [center](#center)
     - [shift](#shift)
     - [not](#not)
-    - [id](#id)
   - [n -> 1 functions](#n---1-functions)
     - [any](#any)
     - [all](#all)
@@ -93,7 +92,7 @@ This Project is based on Python 3.10.0
     - [median](#median)
     - [var](#var)
     - [eq](#eq-1)
-    - [agg](#agg)
+    - [agg](#agg-1)
     - [state](#state)
     - [lod_and](#lod_and)
     - [lod_or](#lod_or)
@@ -150,7 +149,7 @@ This Project is based on Python 3.10.0
     - [orderby](#orderby-1)
     - [where](#where-1)
     - [groupby](#groupby)
-    - [agg](#agg-1)
+    - [agg](#agg-2)
 ---
 
 # class Qfrom
@@ -935,7 +934,7 @@ q.map('a,b', lambda x,y: x+y)
 
 ### args not specified
 
-if args is not speecified the passed columns will be choosen by ne names of arguments from the given function.
+if args is not speecified the passed columns will be choosen by ne names of arguments of the given function.
 ```python
 q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
 q.map(func=lambda b,a: b+a, out='c')
@@ -1103,18 +1102,368 @@ q.map(func=col.id, out='i')
 ```
 
 ## orderby
+```python
+data = [
+    {'a': 3, 'b': 4, 'c': 1},
+    {'a': 2, 'b': 3, 'c': 2},
+    {'a': 2, 'b': 2, 'c': 3},
+    {'a': 1, 'b': 1, 'c': 4},
+]
+q = Qfrom(data)
+q.orderby('a')
+```
+```
+> Qfrom
+> a	b	c
+> 1	1	4
+> 2	3	2
+> 2	2	3
+> 3	4	1
+```
+
+```python
+data = [
+    {'a': 3, 'b': 4, 'c': 1},
+    {'a': 2, 'b': 3, 'c': 2},
+    {'a': 2, 'b': 2, 'c': 3},
+    {'a': 1, 'b': 1, 'c': 4},
+]
+q = Qfrom(data)
+q.orderby('a', reverse=True)
+```
+```
+> Qfrom
+> a	b	c
+> 3	4	1
+> 2	2	3
+> 2	3	2
+> 1	1	4
+```
+
+it is possible to order by multiple keys.
+```python
+data = [
+    {'a': 3, 'b': 4, 'c': 1},
+    {'a': 2, 'b': 3, 'c': 2},
+    {'a': 2, 'b': 2, 'c': 3},
+    {'a': 1, 'b': 1, 'c': 4},
+]
+q = Qfrom(data)
+q.orderby('a, b')
+```
+```
+> Qfrom
+> a	b	c
+> 1	1	4
+> 2	2	3
+> 2	3	2
+> 3	4	1
+```
+
+it is possible to transform the key column through a function.
+```python
+data = [
+    {'a': 3, 'b': 4, 'c': 1},
+    {'a': 2, 'b': 3, 'c': 2},
+    {'a': 2, 'b': 2, 'c': 3},
+    {'a': 1, 'b': 1, 'c': 4},
+]
+q = Qfrom(data)
+q.orderby('a', lambda x: x%2)
+```
+```
+> Qfrom
+> a	b	c
+> 2	3	2
+> 2	2	3
+> 3	4	1
+> 1	1	4
+```
+
+if selection is not speecified the passed columns will be choosen by ne names of arguments of the given function.
+```python
+data = [
+    {'a': 3, 'b': 4, 'c': 1},
+    {'a': 2, 'b': 3, 'c': 2},
+    {'a': 2, 'b': 2, 'c': 3},
+    {'a': 1, 'b': 1, 'c': 4},
+]
+q = Qfrom(data)
+q.orderby(func=lambda a: a%2)
+```
+```
+> Qfrom
+> a	b	c
+> 2	3	2
+> 2	2	3
+> 3	4	1
+> 1	1	4
+```
 
 ## where
+```python
+q = Qfrom({
+    'a': [True, False, True, False, True],
+    'b': [1, 1, 1, 1, 0],
+    'c': [1, 2, 3, 4, 5]
+})
+q.where('a')
+```
+```
+> Qfrom
+> a	b	c
+> True	1	1
+> True	1	3
+> True	0	5
+```
+
+it is possible to pass multiple keys into where method. The values in all selected columns will first be parst to booleans. The parsed columns will be combined through a logical and operation to resive the final boolean key array which determines which rows will be passed to the result Qfrom.
+```python
+q = Qfrom({
+    'a': [True, False, True, False, True],
+    'b': [1, 1, 1, 1, 0],
+    'c': [1, 2, 3, 4, 5]
+})
+q.where('a, b')
+```
+```
+> Qfrom
+> a	b	c
+> True	1	1
+> True	1	3
+```
+
+it is possible to transform the key column through a function.
+```python
+q = Qfrom({
+    'a': [True, False, True, False, True],
+    'b': [1, 1, 1, 1, 0],
+    'c': [1, 2, 3, 4, 5]
+})
+q.where('c', lambda x: x < 3)
+```
+```
+> Qfrom
+> a	b	c
+> True	1	1
+> False	1	2
+```
+
+if selection is not speecified the passed columns will be choosen by ne names of arguments of the given function.
+```python
+q = Qfrom({
+    'a': [True, False, True, False, True],
+    'b': [1, 1, 1, 1, 0],
+    'c': [1, 2, 3, 4, 5]
+})
+q.where(func=lambda c: c < 3)
+```
+```
+> Qfrom
+> a	b	c
+> True	1	1
+> False	1	2
+```
 
 ## groupy
+```python
+q = Qfrom({
+    'a': [1, 1, 2, 2],
+    'b': [3, 3, 3, 4],
+    'c': [5, 6, 7, 8]
+})
+q.groupby('a')
+```
+```
+> Qfrom
+> key	group
+> 1	Qfrom
+> a	b	c
+> 1	3	5
+> 1	3	6
+> 2	Qfrom
+> a	b	c
+> 2	3	7
+> 2	4	8
+```
+
+it is possible to group by multiple keys. Therefore the selcted columns will be transforemd to one column full of tuples holding the items from the selected columns.
+```python
+q = Qfrom({
+    'a': [1, 1, 2, 2],
+    'b': [3, 3, 3, 4],
+    'c': [5, 6, 7, 8]
+})
+q.groupby('a, b')
+```
+```
+> Qfrom
+> key	group
+> (1, 3)	Qfrom
+> a	b	c
+> 1	3	5
+> 1	3	6
+> (2, 3)	Qfrom
+> a	b	c
+> 2	3	7
+> (2, 4)	Qfrom
+> a	b	c
+> 2	4	8
+```
+
+it is possible to transform the key column through a function.
+```python
+q = Qfrom({
+    'a': [1, 1, 2, 2],
+    'b': [3, 3, 3, 4],
+    'c': [5, 6, 7, 8]
+})
+q.groupby('c', lambda x: x%2)
+```
+```
+> Qfrom
+> key	group
+> 1	Qfrom
+> a	b	c
+> 1	3	5
+> 2	3	7
+> 0	Qfrom
+> a	b	c
+> 1	3	6
+> 2	4	8
+```
+
+if selection is not speecified the passed columns will be choosen by ne names of arguments of the given function.
+```python
+q = Qfrom({
+    'a': [1, 1, 2, 2],
+    'b': [3, 3, 3, 4],
+    'c': [5, 6, 7, 8]
+})
+q.groupby(func=lambda c: c%2)
+```
+```
+> Qfrom
+> key	group
+> 1	Qfrom
+> a	b	c
+> 1	3	5
+> 2	3	7
+> 0	Qfrom
+> a	b	c
+> 1	3	6
+> 2	4	8
+```
 
 ## flatten
+```python
+q = Qfrom({
+    'a': [1, 2],
+    'b': [[3, 4], [5, 6]]
+})
+q.flatten('b')
+```
+```
+> Qfrom
+> a	b
+> 1	3
+> 1	4
+> 2	5
+> 2	6
+```
 
 ## unique
+collects first appearing items in Qfrom with a unique key.
+```python
+q = Qfrom({
+    'a': [1, 2, 2, 3, 3],
+    'b': [4, 5, 5, 6, 7]
+})
+q.unique('a')
+```
+```
+> Qfrom
+> a	b
+> 1	4
+> 2	5
+> 3	6
+```
+
+it is possible to pass multiple keys.
+```python
+q = Qfrom({
+    'a': [1, 2, 2, 3, 3],
+    'b': [4, 5, 5, 6, 7]
+})
+q.unique('a, b')
+```
+```
+> Qfrom
+> a	b
+> 1	4
+> 2	5
+> 3	6
+> 3	7
+```
 
 ## value counts
+count how often each key appears in the given Qfrom.
+```python
+q = Qfrom({
+    'a': [1, 2, 2, 3, 3],
+    'b': [4, 5, 5, 6, 7]
+})
+q.unique('a')
+```
+```
+> Qfrom
+> value	count
+> 1	1
+> 2	2
+> 3	2
+```
 
-## aa
+it is possible to pass multiple keys. Therefore the selcted columns will be transforemd to one column full of tuples holding the items from the selected columns.
+```python
+q = Qfrom({
+    'a': [1, 2, 2, 3, 3],
+    'b': [4, 5, 5, 6, 7]
+})
+q.value_counts('a, b')
+```
+```
+> Qfrom
+> value	count
+> (1, 4)	1
+> (2, 5)	2
+> (3, 6)	1
+> (3, 7)	1
+```
+
+## agg
+if one function is passed to agg, the function will be applied to every column.
+```python
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
+q.agg(agg.sum)
+```
+```
+> (6, 15)
+```
+
+multiple functions can be passed as a tuple of functions. Each function will be applied to the corresponding column in order of key apperances in the Qfrom.
+```python
+q = Qfrom({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
+q.agg((agg.max, agg.min))
+```
+```
+> (3, 4)
+```
 
 ## join
 
@@ -1153,30 +1502,155 @@ q.map(func=col.id, out='i')
 
 # class col
 
+class is a colection of functions which can easily be applied to colums of in a Qfrom. 
+
 import col like this
 
 ```python
 from QfromPackage.Qfrom_slim import col
 ```
 
-## 1 -> 1 functions
+## 0 -> 1 functions
 
-### pass_none
-### normalize
-### abs
-### center
-### shift
-### not
 ### id
+```python
+g = col.id()
+print(next(g))
+print(next(g))
+print(next(g))
+```
+```
+> 0
+> 1
+> 2
+```
+
+```python
+q = Qfrom({'a': ['x', 'y', 'z']})
+q.map(func=col.id, out='id')
+```
+```
+> Qfrom
+> a	id
+> x	0
+> y	1
+> z	2
+```
+
+## 1 -> 1 functions
+function which resive one np.ndarray and return one np.ndarray of same lenght.
+
+### normalize
+```python
+a = np.array([1, 2, 3, 4])
+col.normalize(a)
+```
+```
+> array([0.25, 0.5 , 0.75, 1.  ])
+```
+
+```python
+q = Qfrom({'a': [1, 2, 3, 4]})
+q.map('a', col.normalize)
+```
+```
+> Qfrom
+> a
+> 0.25
+> 0.5
+> 0.75
+> 1.0
+```
+
+```python
+a = np.array([1, -2, 3, -4])
+col.normalize(a)
+```
+```
+> array([ 0.25, -0.5 ,  0.75, -1.  ])
+```
+
+### abs
+```python
+a = np.array([1, -2, 3, -4])
+col.abs(a)
+```
+```
+> array([1, 2, 3, 4])
+```
+
+### shift
+```python
+a = np.array([1, 2, 3, 4])
+col.shift(steps=1, default_value=0)(a)
+```
+```
+> array([0, 1, 2, 3])
+```
+
+### not
 
 ## n -> 1 functions
+function which resive one np.ndarray and return multiple np.ndarray of same lenght.
 
 ### any
 ### all
 ### min
 ### min_colname
+```python
+a = np.array([1, 2, 3, 4])
+b = np.array([4, 3, 2, 1])
+
+col.min_colname(a=a, b=b)
+```
+```
+> array(['a', 'a', 'b', 'b'], dtype=object)
+```
+
+```python
+q = Qfrom({
+    'a': [1, 2, 3, 4],
+    'b': [4, 3, 2, 1]
+})
+q.map('*', col.min_colname, 'min')
+```
+```
+> Qfrom
+> a	b	min
+> 1	4	a
+> 2	3	a
+> 3	2	b
+> 4	1	b
+```
+
 ### max
 ### max_colname
+```python
+a = np.array([1, 2, 3, 4])
+b = np.array([4, 3, 2, 1])
+
+col.max_colname(a=a, b=b)
+```
+```
+> array(['b', 'b', 'a', 'a'], dtype=object)
+```
+
+```python
+q = Qfrom({
+    'a': [1, 2, 3, 4],
+    'b': [4, 3, 2, 1]
+})
+q.map('*', col.max_colname, 'max')
+```
+```
+> Qfrom
+> a	b	max
+> 1	4	b
+> 2	3	b
+> 3	2	a
+> 4	1	a
+```
+
 ### sum
 ### mean
 ### median
