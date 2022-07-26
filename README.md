@@ -1785,11 +1785,11 @@ setup
 
 ### append
 
-![](Images/append%20comparison.png)
+![append comparsion](Images/append%20comparison.png)
 
 ### getitem
 
-![](Images/getitem%20comparison.png)
+![get item comparsion](Images/getitem%20comparison.png)
 
 ### iter
 
