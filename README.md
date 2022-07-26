@@ -423,6 +423,8 @@ q
 > 4 7
 ```
 
+[Performance test](#append-1)
+
 [Contents](#contents)
 
 ---
@@ -571,6 +573,8 @@ q
 
 ## getitem
 
+[Performance test](#getitem-1)
+
 ### get row
 ```python
 q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
@@ -696,6 +700,8 @@ for a, b in q:
 > 2 5
 > 3 6
 ```
+
+[Performance test](#iter-1)
 
 [Contents](#contents)
 
@@ -849,6 +855,14 @@ q.rename({'b': 'c'})
 
 ## select
 
+args
+- selection: str|tuple[str]|list[str]
+  
+    -> determents which columns will be passed to new Qfrom
+- return: Qfrom
+
+[Performance test](#select-1)
+
 ### string
 ```python
 q = Qfrom({
@@ -990,7 +1004,7 @@ q.select(('a', 'c'))
 ## map
 
 args
-- args: str | tuple[str] | list[str] = None,
+- args: str | tuple[str] | list[str] = None
   
     -> determents which columns will be passed to func
 - func: callable = None,
@@ -1012,6 +1026,8 @@ q.map('a,b', lambda x,y: x+y, 'c')
 > 2	5	7
 > 3	6	9
 ```
+
+[Performance test](#map-1)
 
 ### out not specified
 
@@ -1300,6 +1316,8 @@ q.orderby(func=lambda a: a%2)
 > 1	1	4
 ```
 
+[Performance test](#orderby-1)
+
 [Contents](#contents)
 
 ---
@@ -1368,6 +1386,8 @@ q.where(func=lambda c: c < 3)
 > True	1	1
 > False	1	2
 ```
+
+[Performance test](#where-1)
 
 [Contents](#contents)
 
@@ -1462,6 +1482,12 @@ q.groupby(func=lambda c: c%2)
 > 1	3	6
 > 2	4	8
 ```
+
+[Performance test](#groupby)
+
+[Contents](#contents)
+
+---
 
 ## flatten
 ```python
@@ -1580,6 +1606,8 @@ q.agg((agg.max, agg.min))
 ```
 > (3, 4)
 ```
+
+[Performance test](#agg-2)
 
 [Contents](#contents)
 
