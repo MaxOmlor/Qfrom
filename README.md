@@ -25,7 +25,7 @@ q
 > Ann	freelancer	56000
 ```
 
-One day Emma the manager asks Bob the data scientist for a list of all employees. Bob just enters the following inti his IDE
+One day Emma the manager asks Bob the data scientist for a list of all employees. Bob just enters the following into his IDE
 ```python
 q.where(func=lambda job: job=='employee')
 ```
