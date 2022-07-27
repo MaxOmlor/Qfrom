@@ -2,6 +2,71 @@
 Qfrom provides a unified and simple query language for sets of data.
 This Project is based on Python 3.10.0
 
+For a first impression here a example of an imaginary company. This company consist of four peoble.
+```python
+data = {
+    'name': ['Emma', 'Bob', 'Steve', 'Ann'],
+    'job': ['manager', 'employee', 'employee', 'freelancer'],
+    'salary': [90_000, 61_000, 48_000, 56_000]
+}
+```
+
+To turn this data info a Qfrom object, just pass the data into the constructor.
+```python
+q = Qfrom(data)
+q
+```
+```
+> Qfrom
+> name	job	salary
+> Emma	manager	90000
+> Bob	employee	61000
+> Steve	employee	48000
+> Ann	freelancer	56000
+```
+
+One day Emma the manager asks Bob the data scientist for a list of all employees. Bob just enters the following inti his IDE
+```python
+q.where(func=lambda job: job=='employee')
+```
+```
+> Qfrom
+> name	job	salary
+> Bob	employee	61000
+> Steve	employee	48000
+```
+
+Because Bob finished is task so quickly, Emma wants to increase everyones salary by 1,000 $
+```python
+q = q.map('salary', lambda x: x+1_000)
+q
+```
+```
+> Qfrom
+> name	job	salary
+> Emma	manager	91000
+> Bob	employee	62000
+> Steve	employee	49000
+> Ann	freelancer	57000
+```
+
+Now Emma wants to see the average salary per job title. A tricky one, bot not for Bob...
+```python
+q.groupby('job')\
+    .map('group', func.vec(lambda x: x['salary']))\
+    .map('group', func.vec(lambda x: x.agg(agg.mean)))\
+    .rename({'key': 'job', 'group': 'mean salary'})
+```
+```
+> Qfrom
+> job	mean salary
+> manager	91000.0
+> employee	55500.0
+> freelancer	57000.0
+```
+
+For a full desciption of all Qfrom functionality just browse throght the following documentation.
+
 ---
 
 # Contents
