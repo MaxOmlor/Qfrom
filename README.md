@@ -69,6 +69,7 @@ For a full desciption of all Qfrom functionality just browse throght the followi
 
 ---
 
+
 # Contents
 - [Qfrom_slim](#qfrom_slim)
 - [Contents](#contents)
@@ -2748,6 +2749,16 @@ def map_func_df_np(df: pd.DataFrame):
     map_age = np.frompyfunc(test_func, 2, 1)
     df['msg'] = map_age(df['name'], df['age'])
     return df
+    
+def map_func_np_iter(data):
+    o = np.full(data['name'].size, '', dtype=np.dtype('U40'))
+    it = np.nditer([data['name'], data['age'], o], [],
+                [['readonly']]*2+ [['writeonly','allocate']])
+    while not it.finished:
+        it[2] = test_func(it[0], it[1])
+        it.iternext()
+    data['msg'] = it.operands[2]
+    return data
 ```
 
 ![](Images/map%20%20by%20func%202%20args%20comparison.png)
@@ -2756,12 +2767,13 @@ runtimes for max data set size n=1 000 000
 
 ||||
 |---|---|---|
-|np	|0.225 s	|1.0%	|
-|df	|7.09 s	|31.476%	|
-|qs	|0.216 s	|0.959%	|
-|l	|0.404 s	|1.793%	|
-|df_lcph	|0.355 s	|1.575%	|
-|df_np	|0.194 s	|0.861%	|
+|np	|0.244 s	|1.0%	|
+|df	|6.877 s	|28.15%	|
+|qs	|0.234 s	|0.958%	|
+|l	|0.431 s	|1.764%	|
+|df_lcph	|0.357 s	|1.461%	|
+|df_np	|0.212 s	|0.867%	|
+|np_iter	|1.419 s	|5.809%	|
 
 [Contents](#contents)
 
