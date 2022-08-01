@@ -600,10 +600,10 @@ class table():
         cls,
         table_dict: Table,
         other: Table,
-        join_outer_left: bool = False,
-        join_outer_right: bool = False
+        join_left_outer: bool = False,
+        join_right_outer: bool = False
         ) -> Table:
-        if join_outer_left and join_outer_right:
+        if join_left_outer and join_right_outer:
             if not table_dict:
                 return other
             if not other:
@@ -614,7 +614,7 @@ class table():
                 table_dict[key] if key in table_dict else np.full(len_table_dict, None),
                 other[key] if key in other else np.full(len_other, None)
                 ) for key in set(table_dict.keys()) | set(other.keys())}
-        elif join_outer_left:
+        elif join_left_outer:
             if not table_dict:
                 return table_dict
             len_table_dict = len(first(table_dict.values()))
@@ -623,7 +623,7 @@ class table():
                 col,
                 other[key] if key in other else np.full(len_other, None)
                 ) for key, col in table_dict.items()}
-        elif join_outer_right:
+        elif join_right_outer:
             if not other:
                 return other
             len_table_dict = len(first(table_dict.values()))
@@ -645,12 +645,12 @@ class table():
         cls,
         table_dict: Table,
         others: Iterable[Table],
-        join_outer_left: bool = False,
-        join_outer_right: bool = False,
+        join_left_outer: bool = False,
+        join_right_outer: bool = False,
         ) -> Table:
         result_dict = table_dict
         for td in others:
-            result_dict = table.concat(result_dict, td, join_outer_left, join_outer_right)
+            result_dict = table.concat(result_dict, td, join_left_outer, join_right_outer)
         return result_dict
 
     @classmethod
@@ -787,146 +787,12 @@ def get_keys_array_list(
 def calc_operations(table_dict: Table, operation_list: list[dict[str,Any]]) -> Table:
     result_dict = table_dict
 
-    for op in operation_list:
-        #if not any(list(result_dict.values())[0]):
-        #    return result_dict
-        
-        match op['Operation']:
-            case Operation.APPEND:
-                item = op['item']
-                result_dict = table.append(result_dict, item)
-                continue
-            case Operation.SELECT:
-                selection = op['selection']
-
-                #selection = trans_select(selection, keys=result_dict.keys())
-                #result_dict = {key: result_dict[key] for key in selection}
-                #result_dict = {key: col for key, col in result_dict.items() if key in selection}
-                result_dict = table.select(result_dict, selection)
-                continue
-            case Operation.MAP:
-                args = op['args']
-                func = op['func']
-                out = op['out']
-
-                #args = trans_select(args, keys=result_dict.keys())
-                #mapped_dict = table.map(result_dict, args, func, out)
-                #result_dict = result_dict | mapped_dict
-                result_dict = table.map_join(result_dict, args, func, out)
-                continue
-            case Operation.ORDERBY:
-                selection = op['selection']
-                func = op['func']
-                reverse = op['reverse']
-
-                #keys_array_list = get_keys_array_list(result_dict, selection, result_dict.keys(), func)
-                #result_dict = table.orderby(result_dict, keys_array_list, reverse)
-                result_dict = table.orderby(result_dict, selection, func, reverse)
-                continue
-            case Operation.WHERE:
-                selection = op['selection']
-                func = op['func']
-
-                #keys_array_list = get_keys_array_list(result_dict, selection, result_dict.keys(), func)
-                #result_dict = table.where(result_dict, keys_array_list)
-                result_dict = table.where(result_dict, selection, func)
-                continue
-            case Operation.GROUPBY:
-                selection = op['selection']
-                func = op['func']
-
-                #keys_array_list = get_keys_array_list(result_dict, selection, result_dict.keys(), func)
-                #key_iter = keys_array_list[0]
-                #if len(keys_array_list) > 1:
-                    #key_array = list_to_array(list(iter_array_list(keys_array_list)))
-                #    key_iter = iter_array_list(keys_array_list)
-                #result_dict = table.groupby(result_dict, key_iter)
-                result_dict = table.groupby(result_dict, selection, func)
-                continue
-            case Operation.FLATTEN:
-                key = op['key']
-                
-                result_dict = table.flatten(result_dict, key)
-                continue
-            case Operation.UNIQUE:
-                selection = op['selection']
-
-                #selection = trans_select(selection, keys=result_dict.keys())
-                #key_dict = {key: result_dict[key] for key in selection}
-                #keys_array_list = list(key_dict.values())
-                #key_array = array_tuple_to_tuple_array(keys_array_list)
-                #result_dict = table.unique(result_dict, key_array)
-                result_dict = table.unique(result_dict, selection)
-                continue
-            case Operation.VALUE_COUNTS:
-                selection = op['selection']
-
-                #selection = trans_select(selection, keys=result_dict.keys())
-                #key_dict = {key: result_dict[key] for key in selection}
-                #keys_array_list = list(key_dict.values())
-                #key_iter = iter_array_list(keys_array_list)
-                #result_dict = key_array_to_value_counts(key_iter)
-                result_dict = table.value_counts(result_dict, selection)
-                continue
-            case Operation.REMOVE:
-                selection = op['selection']
-
-                #selection = trans_select(selection, keys=result_dict.keys())
-                #result_dict = {key: col for key, col in result_dict.items() if key not in selection}
-                result_dict = table.remove(result_dict, selection)
-                continue
-            case Operation.RENAME:
-                map = op['map']
-
-                #result_dict = {map[key] if key in map else key: col for key, col in result_dict.items()}
-                result_dict = table.rename(result_dict, map)
-                continue
-            case Operation.JOIN:
-                other = op['other']
-                key_dict = op['key_dict']
-                join_outer_left = op['join_outer_left']
-                join_outer_right = op['join_outer_right']
-                
-                result_dict = table.join(result_dict, other, key_dict, join_outer_left, join_outer_right)
-                continue
-            case Operation.JOINCROSS:
-                other = op['other']
-                result_dict = table.join_cross(result_dict, other)
-                continue
-            case Operation.JOINID:
-                other = op['other']
-                join_outer_left = op['join_outer_left']
-                join_outer_right = op['join_outer_right']
-                result_dict = table.join_id(result_dict, other, join_outer_left, join_outer_right)
-                continue
-            case Operation.CONCAT:
-                others = op['others']
-                join_outer_left = op['join_outer_left']
-                join_outer_right = op['join_outer_right']
-                #for td in others:
-                #    result_dict = table.concat(result_dict, td, join_outer_left, join_outer_right)
-                result_dict = table.concat_multiple(result_dict, others, join_outer_left, join_outer_right)
-                continue
+    for func, kwrgs in operation_list:
+        result_dict = func(result_dict, **kwrgs)
     
     return result_dict
 
 
-class Operation(enum.Enum):
-    APPEND          = 1
-    SELECT          = 2
-    MAP             = 3
-    WHERE           = 4
-    ORDERBY         = 5
-    JOIN            = 6
-    JOINCROSS       = 7
-    JOINID          = 8
-    CONCAT          = 9
-    GROUPBY         = 10
-    FLATTEN         = 11
-    UNIQUE          = 12
-    VALUE_COUNTS    = 13
-    REMOVE          = 14
-    RENAME          = 15
 
 class Qfrom():
     # - import_list
@@ -1068,10 +934,7 @@ class Qfrom():
         return str(self)
     # - append
     def append(self, item: Any|tuple|dict) -> None:
-        operation = {
-            'Operation': Operation.APPEND,
-            'item': item
-        }
+        operation = (table.append, {'item': item})
         self.__operation_list.append(operation)
         #self.__operation_list += [operation]
     # - setitem -> more dim slice support
@@ -1188,30 +1051,21 @@ class Qfrom():
 
     # - remove(selection: Selection)
     def remove(self, selection: Selection):
-        operation = {
-            'Operation': Operation.REMOVE,
-            'selection': selection,
-        }
+        operation = (table.remove, {'selection': selection})
         return Qfrom(
             operation_list=self.__operation_list+[operation],
             table_dict=self.table_dict,
             )
     # - rename(map: dict[str, str])
     def rename(self, map: dict[str, str]) -> Qfrom:
-        operation = {
-            'Operation': Operation.RENAME,
-            'map': map,
-        }
+        operation = (table.rename, {'map': map})
         return Qfrom(
             operation_list=self.__operation_list+[operation],
             table_dict=self.table_dict,
             )
     # - select(selection: Selection)
     def select(self, selection: Selection) -> Qfrom:
-        operation = {
-            'Operation': Operation.SELECT,
-            'selection': selection,
-        }
+        operation = (table.select, {'selection': selection})
         return Qfrom(
             operation_list=self.__operation_list+[operation],
             table_dict=self.table_dict,
@@ -1223,13 +1077,11 @@ class Qfrom():
         func: ColFunc=None,
         out: Selection=None
         ) -> Qfrom:
-
-        operation = {
-            'Operation': Operation.MAP,
+        operation = (table.map_join, {
             'args': args,
             'func': func,
             'out': out,
-        }
+        })
         return Qfrom(
             operation_list=self.__operation_list+[operation],
             table_dict=self.table_dict,
@@ -1241,12 +1093,11 @@ class Qfrom():
         func: ColFunc = None,
         reverse: bool = False
         ) -> Qfrom:
-        operation = {
-            'Operation': Operation.ORDERBY,
+        operation = (table.orderby, {
             'selection': selection,
             'func': func,
             'reverse': reverse,
-        }
+        })
         return Qfrom(
             operation_list=self.__operation_list+[operation],
             table_dict=self.table_dict,
@@ -1258,11 +1109,10 @@ class Qfrom():
         selection: Selection = None,
         func: ColFunc = None
         ) -> Qfrom:
-        operation = {
-            'Operation': Operation.WHERE,
+        operation = (table.where, {
             'selection': selection,
             'func': func,
-        }
+        })
         return Qfrom(
             operation_list=self.__operation_list+[operation],
             table_dict=self.table_dict,
@@ -1273,41 +1123,31 @@ class Qfrom():
         selection: Selection = None,
         func: ColFunc = None
         )-> Qfrom:
-        operation = {
-            'Operation': Operation.GROUPBY,
+        operation = (table.groupby, {
             'selection': selection,
             'func': func,
-        }
+        })
         return Qfrom(
             operation_list=self.__operation_list+[operation],
             table_dict=self.table_dict,
             )
     # - flatten
     def flatten(self, key: str) -> Qfrom:
-        operation = {
-            'Operation': Operation.FLATTEN,
-            'key': key,
-        }
+        operation = (table.flatten, {'key': key})
         return Qfrom(
             operation_list=self.__operation_list+[operation],
             table_dict=self.table_dict,
             )
     # - unique
     def unique(self, selection: Selection) -> Qfrom:
-        operation = {
-            'Operation': Operation.UNIQUE,
-            'selection': selection,
-        }
+        operation = (table.unique, {'selection': selection})
         return Qfrom(
             operation_list=self.__operation_list+[operation],
             table_dict=self.table_dict,
             )
     # - value_counts
     def value_counts(self, selection: Selection) -> Qfrom:
-        operation = {
-            'Operation': Operation.VALUE_COUNTS,
-            'selection': selection,
-        }
+        operation = (table.value_counts, {'selection': selection})
         return Qfrom(
             operation_list=self.__operation_list+[operation],
             table_dict=self.table_dict,
@@ -1345,80 +1185,91 @@ class Qfrom():
 
 
     # - join
-    def join(self, other: Qfrom, key_dict=None, join_outer_left=False, join_outer_right=False) -> Qfrom:
-        operation = {
-            'Operation': Operation.JOIN,
-            'other': other.table_dict,
+    def join(
+        self,
+        other: Qfrom,
+        key_dict: dict[str, str] = None,
+        join_left_outer: bool = False,
+        join_right_outer: bool = False
+        ) -> Qfrom:
+        operation = (table.join, {
+            'other': other,
             'key_dict': key_dict,
-            'join_outer_left': join_outer_left,
-            'join_outer_right': join_outer_right,
-        }
+            'join_left_outer': join_left_outer,
+            'join_right_outer': join_right_outer,
+        })
         return Qfrom(
             operation_list=self.__operation_list+[operation],
             table_dict=self.table_dict,
             )
     # - join_cross
     def join_cross(self, other: Qfrom) -> Qfrom:
-        operation = {
-            'Operation': Operation.JOINCROSS,
-            'other': other.table_dict,
-        }
+        operation = (table.join_cross, {'other': other.table_dict})
         return Qfrom(
             operation_list=self.__operation_list+[operation],
             table_dict=self.table_dict,
             )
     # - join_outer
-    def join_outer(self, other: Qfrom, key_dict=None) -> Qfrom:
-        return self.join(other, key_dict, join_outer_left=True, join_outer_right=True)
+    def join_outer(self, other: Qfrom, key_dict: dict[str, str] = None) -> Qfrom:
+        return self.join(other, key_dict, join_left_outer=True, join_right_outer=True)
     # - join_outer_left
-    def join_outer_left(self, other: Qfrom, key_dict=None) -> Qfrom:
-        return self.join(other, key_dict, join_outer_left=True, join_outer_right=False)
+    def join_outer_left(self, other: Qfrom, key_dict: dict[str, str] = None) -> Qfrom:
+        return self.join(other, key_dict, join_left_outer=True, join_right_outer=False)
     # - join_outer_right
-    def join_outer_right(self, other: Qfrom, key_dict=None) -> Qfrom:
-        return self.join(other, key_dict, join_outer_left=False, join_outer_right=True)
+    def join_outer_right(self, other: Qfrom, key_dict: dict[str, str] = None) -> Qfrom:
+        return self.join(other, key_dict, join_left_outer=False, join_right_outer=True)
     # - join_id
-    def join_id(self, other: Qfrom, join_outer_left=False, join_outer_right=False) -> Qfrom:
-        operation = {
-            'Operation': Operation.JOINID,
+    def join_id(
+        self,
+        other: Qfrom,
+        join_left_outer: bool = False,
+        join_right_outer: bool = False
+        ) -> Qfrom:
+        operation = (table.join_id, {
+            'other': other,
             'other': other.table_dict,
-            'join_outer_left': join_outer_left,
-            'join_outer_right': join_outer_right,
-        }
+            'join_left_outer': join_left_outer,
+            'join_right_outer': join_right_outer,
+        })
         return Qfrom(
             operation_list=self.__operation_list+[operation],
             table_dict=self.table_dict,
             )
     # - join_id_outer
     def join_id_outer(self, other: Qfrom) -> Qfrom:
-        return self.join_id(other, join_outer_left=True, join_outer_right=True)
+        return self.join_id(other, join_left_outer=True, join_right_outer=True)
     # - join_id_outer_left
     def join_id_outer_left(self, other: Qfrom) -> Qfrom:
-        return self.join_id(other, join_outer_left=True, join_outer_right=False)
+        return self.join_id(other, join_left_outer=True, join_right_outer=False)
     # - join_id_outer_right
     def join_id_outer_right(self, other: Qfrom) -> Qfrom:
-        return self.join_id(other, join_outer_left=False, join_outer_right=True)
+        return self.join_id(other, join_left_outer=False, join_right_outer=True)
 
     # - concat
-    def concat(self, other: Qfrom, join_outer_left=False, join_outer_right=False) -> Qfrom:
-        operation = {
-            'Operation': Operation.CONCAT,
+    def concat(
+        self,
+        other: Qfrom|list[Qfrom],
+        join_left_outer=False,
+        join_right_outer=False
+        ) -> Qfrom:
+        operation = (table.concat_multiple, {
             'others': [q.table_dict for q in other] if type(other) is list else [other.table_dict],
-            'join_outer_left': join_outer_left,
-            'join_outer_right': join_outer_right,
-        }
+            'join_left_outer': join_left_outer,
+            'join_right_outer': join_right_outer,
+        })
         return Qfrom(
             operation_list=self.__operation_list+[operation],
             table_dict=self.table_dict,
             )
     # - concat_outer
-    def concat_outer(self, other: Qfrom) -> Qfrom:
-        return self.concat(other, join_outer_left=True, join_outer_right=True)
+    def concat_outer(self, other: Qfrom|list[Qfrom]) -> Qfrom:
+        return self.concat(other, join_left_outer=True, join_right_outer=True)
     # - concat_outer_left
-    def concat_outer_left(self, other: Qfrom) -> Qfrom:
-        return self.concat(other, join_outer_left=True, join_outer_right=False)
+    def concat_outer_left(self, other: Qfrom|list[Qfrom]) -> Qfrom:
+        return self.concat(other, join_left_outer=True, join_right_outer=False)
     # - concat_outer_right
-    def concat_outer_right(self, other: Qfrom) -> Qfrom:
-        return self.concat(other, join_outer_left=False, join_outer_right=True)
+    def concat_outer_right(self, other: Qfrom|list[Qfrom]) -> Qfrom:
+        return self.concat(other, join_left_outer=False, join_right_outer=True)
 
     # - calc
     def calculate(self) -> dict[str, np.ndarray]:
