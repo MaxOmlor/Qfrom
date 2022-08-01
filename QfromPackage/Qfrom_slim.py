@@ -12,7 +12,7 @@ import enum
 import itertools
 from typing import Any, overload
 from collections import deque
-from collections.abc import Iterable
+from collections.abc import Iterable, Callable
 import csv
 from io import StringIO
 import matplotlib.pyplot as plt
@@ -20,6 +20,12 @@ import time
 
 
 
+
+# custom types
+Table = dict[str, np.ndarray]
+Selection = str|tuple[str]|list[str]
+ColFunc = Callable[[np.ndarray], np.ndarray | tuple[np.ndarray] | Table]
+AggFunc = Callable[[np.ndarray],Any]
 
 
 def first(iterable, predicate_func=None):
@@ -108,82 +114,100 @@ def get_keys_from_func(func, kwrgs=True):
 
 
 
-def try_parse_str(text):
-    if text == 'None' or text.strip() == '':
-        #return None
-        return np.nan
+class parse():
+    @classmethod
+    def try_str(cls, text: str) -> np.nan|int|float|str:
+        if text == 'None' or not text.strip():
+            #return None
+            return np.nan
 
-    try:
-        num = int(text)
-        return num
-    except BaseException:
-        pass
+        try:
+            num = int(text)
+            return num
+        except BaseException:
+            pass
 
-    try:
-        num = float(text)
-        return num
-    except BaseException:
-        pass
-    
-    return text
-def parse_iterable_to_array(iterable):
-    iter_type = type(iterable)
-    if iter_type is np.ndarray:
-        return np.copy(iterable)
-    
-    if isinstance(iterable, list):
-        return list_to_array(iterable)
-    # numpy from iter
-    #iter_list = list(iterable)
-    #return list_to_array(iter_list)
-    return iter_to_array(iterable)
-def parse_iterables_to_arrays(table_dict):
-    table_dict_type = type(table_dict)
+        try:
+            num = float(text)
+            return num
+        except BaseException:
+            pass
+        
+        return text
 
-    if table_dict_type is Qfrom:
-        return {key: np.copy(col) for key, col in table_dict.table_dict}
-    if table_dict_type is dict:
-        return {col_name: parse_iterable_to_array(col) for col_name, col in table_dict.items()}
-    raise ValueError(f'Parameter "table_dict" is no dict or Qfrom_tab. {table_dict=}')
-def try_parse_str_to_collection(text, delimiter=',', headers=True):
-    #try json
-    try:
-        mod_json_str = re.sub("\'", '\"', text)
-        #mod_json_str = text.replace("\'", '\"')
-        result = json.loads(mod_json_str)
-        return result
-    except BaseException:
-        pass
+    @classmethod
+    def iterable_to_array(cls, iterable: Iterable) -> np.ndarray:
+        iter_type = type(iterable)
+        if iter_type is np.ndarray:
+            return np.copy(iterable)
+        
+        if isinstance(iterable, list):
+            return list_to_array(iterable)
 
-    #try csv
-    try:
-        reader = csv.reader(StringIO(text), delimiter=delimiter)
-        file_data = np.array([[try_parse_str(item.strip()) for item in row] for row in reader if ''.join(row).strip() != ''])
-        if headers:
-            header_list = file_data[0]
-            data = file_data[1:]
-            result = {col_name: np.array([try_parse_str(row[index]) for row in data]) for index, col_name in enumerate(header_list)}
-            #result = np.array([{h: try_parse_str(v) for h, v in zip(header_list, row)} for row in data])
-            return result
-        else:
-            return file_data
-    except BaseException:
-        pass
-    
-    raise ValueError('Cant interpret str-arg.')
-def parse_str_to_collection(text, delimiter=',', headers=True):
-    if re.search('^(https://|http://)', text) is not None:
-        return requests.get(text).json()
+        return iter_to_array(iterable)
 
-    col_text = text
-    if os.path.exists(text):
-        with open(text, 'rb') as f_rawdata:
-            rawdata = f_rawdata.read()
-        encoding = chardet.detect(rawdata)['encoding']
+    @classmethod
+    def iterables_to_arrays(cls, table_dict) -> Table:
+        table_dict_type = type(table_dict)
 
-        with open(text, newline='', encoding=encoding) as f_col_text:
-            col_text = f_col_text.read()
-    return try_parse_str_to_collection(col_text, delimiter, headers)
+        if table_dict_type is Qfrom:
+            return {key: np.copy(col) for key, col in table_dict.table_dict}
+        if table_dict_type is dict:
+            return {col_name: cls.iterable_to_array(col) for col_name, col in table_dict.items()}
+        raise ValueError(f'Parameter "table_dict" is no dict or Qfrom_tab. {table_dict=}')
+
+    @classmethod
+    def try_str_to_collection(
+        cls,
+        text: str,
+        delimiter: str = ',',
+        headers: bool = True
+        ) -> Table:
+        #try json
+        try:
+            mod_json_str = re.sub("\'", '\"', text)
+            #mod_json_str = text.replace("\'", '\"')
+            result = json.loads(mod_json_str)
+            return cls.iterables_to_arrays(result)
+        except BaseException:
+            pass
+
+        #try csv
+        try:
+            reader = csv.reader(StringIO(text), delimiter=delimiter)
+            file_data = np.array([[cls.try_str(item.strip()) for item in row] for row in reader if ''.join(row).strip() != ''])
+            if headers:
+                header_list = file_data[0]
+                data = file_data[1:]
+                result = {col_name: np.array([cls.try_str(row[index]) for row in data]) for index, col_name in enumerate(header_list)}
+                #result = np.array([{h: try_parse_str(v) for h, v in zip(header_list, row)} for row in data])
+                return result
+            else:
+                return file_data
+        except BaseException:
+            pass
+        
+        raise ValueError('Cant interpret str-arg.')
+
+    @classmethod
+    def str_to_collection(
+        cls,
+        text: str,
+        delimiter: str = ',',
+        headers: bool = True
+        ) -> Table:
+        if re.search('^(https://|http://)', text) is not None:
+            return cls.iterables_to_arrays(requests.get(text).json())
+
+        col_text = text
+        if os.path.exists(text):
+            with open(text, 'rb') as f_rawdata:
+                rawdata = f_rawdata.read()
+            encoding = chardet.detect(rawdata)['encoding']
+
+            with open(text, newline='', encoding=encoding) as f_col_text:
+                col_text = f_col_text.read()
+        return cls.try_str_to_collection(col_text, delimiter, headers)
 
 
 
@@ -258,7 +282,7 @@ def partition_keys(sep_no_key_parts, intervals, keys):
             no_key_parts.append(mod_prefix_group+mod_point_group+mod_suffix_group)
 
     return no_key_parts
-def trans_select(selection: str|tuple[str]|list[str], keys: tuple[str]) -> list[str]:
+def trans_select(selection: Selection, keys: tuple[str]) -> list[str]:
     if selection is None:
         return None
     if type(selection) is str:
@@ -329,7 +353,7 @@ def group_by_dict(key_iter: Iterable):
         group_ids_dict[key].append(i)
     
     return group_ids_dict
-def key_array_to_value_counts(key_iter: Iterable):
+def key_array_to_value_counts(key_iter: Iterable) -> Table:
     unique_id_dict = {}
     for key in key_iter:
         #print(f'{key=}')
@@ -344,260 +368,423 @@ def key_array_to_value_counts(key_iter: Iterable):
         'count': iter_to_array(unique_id_dict.values())
         }
 
-def append_table_dict(table_dict: dict[str, np.ndarray], item):
-    if type(item) is tuple:
-        if not table_dict and len(item) == 1:
-            return {'y': list_to_array([item[0]])}
+
+
+class table():
+    @classmethod
+    def append(cls, table_dict: Table, item: tuple|dict[str,Any]) -> Table:
+        if type(item) is tuple:
+            if not table_dict and len(item) == 1:
+                return {'y': list_to_array([item[0]])}
+            if not table_dict:
+                return {f'y{i}': list_to_array([value]) for i, value in enumerate(item)}
+            return {key:np.append(col, [item[i]]) for i, (key, col) in enumerate(table_dict.items())}
+
+        if type(item) is dict:
+            return {key: np.append(col, [item[key]]) for key, col in table_dict.items()} if table_dict else {key: list_to_array([value]) for key, value in item.items()}
+
         if not table_dict:
-            return {f'y{i}': list_to_array([value]) for i, value in enumerate(item)}
-        return {key:np.append(col, [item[i]]) for i, (key, col) in enumerate(table_dict.items())}
+            return {'y': list_to_array([item])}
+        key, col = first(table_dict.items())
+        return {key:np.append(col, [item])}
 
-    if type(item) is dict:
-        return {key: np.append(col, [item[key]]) for key, col in table_dict.items()} if table_dict else {key: list_to_array([value]) for key, value in item.items()}
-
-    if not table_dict:
-        return {'y': list_to_array([item])}
-    key, col = first(table_dict.items())
-    return {key:np.append(col, [item])}
-def map_table_dict(
-    table_dict: dict[str, np.ndarray],
-    args: tuple[str]|list[str],
-    func: callable,
-    out: tuple[str]|list[str]=None
-    ) -> dict[str, np.ndarray]:
-
-    if type(out) is str:
-        out = [key.strip() for key in out.split(',')]
-
-    kwrgs = False
-    func_result = None
-    if args is None:
-        args, as_kwrgs = get_keys_from_func_args(func, table_dict.keys())
-    
-        if as_kwrgs:
-            kwrgs_cols = {key:table_dict[key] for key in args}
-            func_result = func(**kwrgs_cols)
-        else:
-            arg_cols = tuple(table_dict[key] for key in args)
-            func_result = func(*arg_cols)
-    elif func:
-        keys = get_keys_from_func(func)
-        if '**' in keys:
-            kwrgs = args[len(keys)-1:] 
-            args = args[:len(keys)-1]
-            kwrgs_cols = {key:table_dict[key] for key in kwrgs}
-            arg_cols = tuple(table_dict[key] for key in args)
-            func_result = func(*arg_cols, **kwrgs_cols)
-        else:
-            arg_cols = tuple(table_dict[key] for key in args)
-            func_result = func(*arg_cols)
-    elif len(args) > 1:
-        arg_cols = tuple(table_dict[key] for key in args)
-        func_result = arg_cols
-    else:
-        func_result = table_dict[args[0]]
-
-    #func_result = optimize_array_dtype(func_result)
-
-    if type(func_result) is tuple and out is not None:
-        return {out[i]: col for i, col in enumerate(func_result)}
-    if type(func_result) is tuple and len(args) > 0 and len(func_result) == 1:
-        return {args[0]: func_result[0]}
-    if type(func_result) is tuple and len(args) > 0:
-        return {f'{args[0]}{i}': col for i, col in enumerate(func_result)}
-    if type(func_result) is tuple:
-        return {f'y{i}': col for i, col in enumerate(func_result)}
-    if type(func_result) is dict:
-        return func_result
-
-    if inspect.isgenerator(func_result) and len(table_dict) > 0 and out is not None:
-        first_col = first(table_dict.values())
-        return {out[0]: list_to_array([next(func_result) for _ in first_col])}
-    if inspect.isgenerator(func_result) and len(table_dict) > 0 and len(args) > 0:
-        first_col = first(table_dict.values())
-        return {args[0]: list_to_array([next(func_result) for _ in first_col])}
-    if inspect.isgenerator(func_result) and len(table_dict) > 0:
-        first_col = first(table_dict.values())
-        return {'y': list_to_array([next(func_result) for _ in first_col])}
-
-    #if type(func_result) is not np.ndarray and isinstance(func_result, Iterable):
-    if type(func_result) is not np.ndarray and type(func_result) is list:
-        func_result = list_to_array(func_result)
-    if type(func_result) is not np.ndarray and type(func_result) is Iterable:
-        func_result = iter_to_array(func_result)
-    if type(func_result) is np.ndarray and out is not None:
-        return {out[0]: func_result}
-    if type(func_result) is np.ndarray and len(args) > 0:
-        return {args[0]: func_result}
-    if type(func_result) is np.ndarray:
-        return {'y': func_result}
-
-    if table_dict and out is not None:
-        first_col = first(table_dict.values())
-        return {out[0]: list_to_array([func_result for _ in first_col])}
-    if table_dict and len(args) > 0:
-        first_col = first(table_dict.values())
-        return {args[0]: list_to_array([func_result for _ in first_col])}
-    if table_dict:
-        first_col = first(table_dict.values())
-        return {'y': list_to_array([func_result for _ in first_col])}
-
-    raise ValueError('cant interpret func result')    
-def join_table_dict(table_dict, other, key_dict, join_left_outer=False, join_right_outer=False):
-    if key_dict is None:
-        key_dict = {key:key for key in set(table_dict.keys()) & set(other.keys())}
-    
-    table_dict_keys = table_dict[first(key_dict.keys())] if len(key_dict.keys()) == 1 else\
-        [tuple(table_dict[key][i] for key in key_dict.keys()) for i in range(len(first(table_dict.values())))]
-    other_keys = other[first(key_dict.values())] if len(key_dict.values()) == 1 else\
-        [tuple(other[key][i] for key in key_dict.values()) for i in range(len(first(other.values())))]
-    this_group_ids_dict = group_by_dict(table_dict_keys)
-    other_group_ids_dict = group_by_dict(other_keys)
-
-    none_id_table_dict = len(table_dict_keys)
-    none_id_other = len(other_keys)
-    table_dict_none_row = {key:np.append(col, [None]) for key, col in table_dict.items()}
-    other_none_row = {key:np.append(col, [None]) for key, col in other.items()}
-
-    result_pair_ids = []
-    for key, group_ids in this_group_ids_dict.items():
-        if key in other_group_ids_dict:
-            result_pair_ids += list(itertools.product(group_ids, other_group_ids_dict[key]))
-        elif join_left_outer:
-            result_pair_ids += [(i, none_id_other) for i in group_ids]
-    if join_right_outer:
-        for key in set(other_group_ids_dict.keys()) - set(this_group_ids_dict.keys()):
-            result_pair_ids += [(none_id_table_dict, i) for i in other_group_ids_dict[key]]
-
-    this_ids = [pair[0] for pair in result_pair_ids]
-    other_ids = [pair[1] for pair in result_pair_ids]
-
-    this_result_dict = {key:col[this_ids] for key, col in table_dict_none_row.items()}
-    other_result_dict = {key:col[other_ids] for key, col in other_none_row.items()}
-    
-    combine_func = np.frompyfunc(lambda a,b: b if a is None else a, 2, 1)
-    result_dict = this_result_dict
-    for key, col in other_result_dict.items():
-        if key in result_dict:
-            result_dict[key] = combine_func(result_dict[key], col)
-        else:
-            result_dict = {**result_dict, key:col}
-    return result_dict
-def join_cross_table_dict(table_dict, other):
-    table_dict_ids = range(len(first(table_dict.values())))
-    other_ids = range(len(first(other.values())))
-    result_pair_ids = list(itertools.product(table_dict_ids, other_ids))
-
-    this_result_ids = [pair[0] for pair in result_pair_ids]
-    other_result_ids = [pair[1] for pair in result_pair_ids]
-
-    this_result_dict = {col_name:col[this_result_ids] for col_name, col in table_dict.items()}
-    other_result_dict = {col_name:col[other_result_ids] for col_name, col in other.items()}
-
-    return this_result_dict | other_result_dict
-def join_id_table_dict(table_dict, other, join_left_outer=False, join_right_outer=False):
-    len_table_dict = len(first(table_dict.values()))
-    len_other = len(first(other.values()))
-    if len_table_dict == len_other:
-        return table_dict | other
-    elif join_left_outer and len_table_dict > len_other:
-        dif = len_table_dict - len_other
-        none_list = np.full(dif, None)
-        return table_dict | {key:np.append(col, none_list) for key, col in other.items()}
-    elif join_right_outer and len_table_dict < len_other:
-        dif = len_other - len_table_dict
-        none_list = np.full(dif, None)
-        return {key:np.append(col, none_list) for key, col in table_dict.items()} | other
-    elif len_table_dict > len_other:
-        return {key: col[:len_other] for key, col in table_dict.items()} | other
-    else:
-        return table_dict | {key: col[:len_table_dict] for key, col in other.items()}
-def concat_table_dict(table_dict, other, join_outer_left, join_outer_right):
-    if join_outer_left and join_outer_right:
-        if not table_dict:
-            return other
-        if not other:
-            return table_dict
-        len_table_dict = len(first(table_dict.values()))
-        len_other = len(first(other.values()))
-        return {key: np.append(
-            table_dict[key] if key in table_dict else np.full(len_table_dict, None),
-            other[key] if key in other else np.full(len_other, None)
-            ) for key in set(table_dict.keys()) | set(other.keys())}
-    elif join_outer_left:
+    @classmethod
+    def select(cls, table_dict: Table, selection: Selection) -> Table:
         if not table_dict:
             return table_dict
-        len_table_dict = len(first(table_dict.values()))
-        len_other = len(first(other.values()))
-        return {key: np.append(
-            col,
-            other[key] if key in other else np.full(len_other, None)
-            ) for key, col in table_dict.items()}
-    elif join_outer_right:
-        if not other:
-            return other
-        len_table_dict = len(first(table_dict.values()))
-        len_other = len(first(other.values()))
-        return {key: np.append(
-            table_dict[key] if key in table_dict else np.full(len_table_dict, None),
-            col) for key, col in other.items()}
-    else:
+        selection = trans_select(selection, keys=table_dict.keys())
+        #return {key: table_dict[key] for key in selection}
+        return {key: col for key, col in table_dict.items() if key in selection}
+    
+    @classmethod
+    def map(
+        cls,
+        table_dict: Table,
+        args: Selection = None,
+        func: ColFunc = None,
+        out: Selection = None
+        ) -> Table:
         if not table_dict:
             return table_dict
-        if not other:
-            return other
+
+        args = trans_select(args, keys=table_dict.keys())
+
+        if type(out) is str:
+            out = [key.strip() for key in out.split(',')]
+
+        kwrgs = False
+        func_result = None
+        if args is None:
+            args, as_kwrgs = get_keys_from_func_args(func, table_dict.keys())
+        
+            if as_kwrgs:
+                kwrgs_cols = {key:table_dict[key] for key in args}
+                func_result = func(**kwrgs_cols)
+            else:
+                arg_cols = tuple(table_dict[key] for key in args)
+                func_result = func(*arg_cols)
+        elif func:
+            keys = get_keys_from_func(func)
+            if '**' in keys:
+                kwrgs = args[len(keys)-1:] 
+                args = args[:len(keys)-1]
+                kwrgs_cols = {key:table_dict[key] for key in kwrgs}
+                arg_cols = tuple(table_dict[key] for key in args)
+                func_result = func(*arg_cols, **kwrgs_cols)
+            else:
+                arg_cols = tuple(table_dict[key] for key in args)
+                func_result = func(*arg_cols)
+        elif len(args) > 1:
+            arg_cols = tuple(table_dict[key] for key in args)
+            func_result = arg_cols
+        else:
+            func_result = table_dict[args[0]]
+
+        #func_result = optimize_array_dtype(func_result)
+
+        if type(func_result) is tuple and out is not None:
+            return {out[i]: col for i, col in enumerate(func_result)}
+        if type(func_result) is tuple and len(args) > 0 and len(func_result) == 1:
+            return {args[0]: func_result[0]}
+        if type(func_result) is tuple and len(args) > 0:
+            return {f'{args[0]}{i}': col for i, col in enumerate(func_result)}
+        if type(func_result) is tuple:
+            return {f'y{i}': col for i, col in enumerate(func_result)}
+        if type(func_result) is dict:
+            return func_result
+
+        if inspect.isgenerator(func_result) and len(table_dict) > 0 and out is not None:
+            first_col = first(table_dict.values())
+            return {out[0]: list_to_array([next(func_result) for _ in first_col])}
+        if inspect.isgenerator(func_result) and len(table_dict) > 0 and len(args) > 0:
+            first_col = first(table_dict.values())
+            return {args[0]: list_to_array([next(func_result) for _ in first_col])}
+        if inspect.isgenerator(func_result) and len(table_dict) > 0:
+            first_col = first(table_dict.values())
+            return {'y': list_to_array([next(func_result) for _ in first_col])}
+
+        #if type(func_result) is not np.ndarray and isinstance(func_result, Iterable):
+        if type(func_result) is not np.ndarray and type(func_result) is list:
+            func_result = list_to_array(func_result)
+        if type(func_result) is not np.ndarray and type(func_result) is Iterable:
+            func_result = iter_to_array(func_result)
+        if type(func_result) is np.ndarray and out is not None:
+            return {out[0]: func_result}
+        if type(func_result) is np.ndarray and len(args) > 0:
+            return {args[0]: func_result}
+        if type(func_result) is np.ndarray:
+            return {'y': func_result}
+
+        if table_dict and out is not None:
+            first_col = first(table_dict.values())
+            return {out[0]: list_to_array([func_result for _ in first_col])}
+        if table_dict and len(args) > 0:
+            first_col = first(table_dict.values())
+            return {args[0]: list_to_array([func_result for _ in first_col])}
+        if table_dict:
+            first_col = first(table_dict.values())
+            return {'y': list_to_array([func_result for _ in first_col])}
+
+        raise ValueError('cant interpret func result')    
+    
+    @classmethod
+    def map_join(
+        cls,
+        table_dict: Table,
+        args: Selection = None,
+        func: ColFunc = None,
+        out: Selection = None
+        ) -> Table:
+        mapped_dict = table.map(table_dict, args, func, out)
+        return table_dict | mapped_dict
+
+    @classmethod
+    def join(
+        cls, 
+        table_dict: Table, 
+        other: Table, 
+        key_dict: dict[str, str], 
+        join_left_outer: bool = False, 
+        join_right_outer: bool = False
+        ) -> Table:
+        if not table_dict:
+            return table_dict
+
+        if key_dict is None:
+            key_dict = {key:key for key in set(table_dict.keys()) & set(other.keys())}
+        
+        table_dict_keys = table_dict[first(key_dict.keys())] if len(key_dict.keys()) == 1 else\
+            [tuple(table_dict[key][i] for key in key_dict.keys()) for i in range(len(first(table_dict.values())))]
+        other_keys = other[first(key_dict.values())] if len(key_dict.values()) == 1 else\
+            [tuple(other[key][i] for key in key_dict.values()) for i in range(len(first(other.values())))]
+        this_group_ids_dict = group_by_dict(table_dict_keys)
+        other_group_ids_dict = group_by_dict(other_keys)
+
+        none_id_table_dict = len(table_dict_keys)
+        none_id_other = len(other_keys)
+        table_dict_none_row = {key:np.append(col, [None]) for key, col in table_dict.items()}
+        other_none_row = {key:np.append(col, [None]) for key, col in other.items()}
+
+        result_pair_ids = []
+        for key, group_ids in this_group_ids_dict.items():
+            if key in other_group_ids_dict:
+                result_pair_ids += list(itertools.product(group_ids, other_group_ids_dict[key]))
+            elif join_left_outer:
+                result_pair_ids += [(i, none_id_other) for i in group_ids]
+        if join_right_outer:
+            for key in set(other_group_ids_dict.keys()) - set(this_group_ids_dict.keys()):
+                result_pair_ids += [(none_id_table_dict, i) for i in other_group_ids_dict[key]]
+
+        this_ids = [pair[0] for pair in result_pair_ids]
+        other_ids = [pair[1] for pair in result_pair_ids]
+
+        this_result_dict = {key:col[this_ids] for key, col in table_dict_none_row.items()}
+        other_result_dict = {key:col[other_ids] for key, col in other_none_row.items()}
+        
+        combine_func = np.frompyfunc(lambda a,b: b if a is None else a, 2, 1)
+        result_dict = this_result_dict
+        for key, col in other_result_dict.items():
+            if key in result_dict:
+                result_dict[key] = combine_func(result_dict[key], col)
+            else:
+                result_dict = {**result_dict, key:col}
+        return result_dict
+    
+    @classmethod
+    def join_cross(cls, table_dict: Table, other: Table) -> Table:
+        if not table_dict:
+            return table_dict
+
+        table_dict_ids = range(len(first(table_dict.values())))
+        other_ids = range(len(first(other.values())))
+        result_pair_ids = list(itertools.product(table_dict_ids, other_ids))
+
+        this_result_ids = [pair[0] for pair in result_pair_ids]
+        other_result_ids = [pair[1] for pair in result_pair_ids]
+
+        this_result_dict = {col_name:col[this_result_ids] for col_name, col in table_dict.items()}
+        other_result_dict = {col_name:col[other_result_ids] for col_name, col in other.items()}
+
+        return this_result_dict | other_result_dict
+
+    @classmethod
+    def join_id(
+        cls,
+        table_dict: Table,
+        other: Table,
+        join_left_outer: bool = False,
+        join_right_outer: bool = False
+        ) -> Table:
+        if not table_dict:
+            return table_dict
+
         len_table_dict = len(first(table_dict.values()))
         len_other = len(first(other.values()))
-        return {key: np.append(table_dict[key], other[key]) for key in set(table_dict.keys()) & set(other.keys())}
-def order_by_table_dict(table_dict, keys_array_list, reverse):
-    ids = None
-    if len(keys_array_list) == 1:
-        ids = np.argsort(keys_array_list[0])
-    else:
-        ids = np.lexsort(keys_array_list[::-1])
+        if len_table_dict == len_other:
+            return table_dict | other
+        elif join_left_outer and len_table_dict > len_other:
+            dif = len_table_dict - len_other
+            none_list = np.full(dif, None)
+            return table_dict | {key:np.append(col, none_list) for key, col in other.items()}
+        elif join_right_outer and len_table_dict < len_other:
+            dif = len_other - len_table_dict
+            none_list = np.full(dif, None)
+            return {key:np.append(col, none_list) for key, col in table_dict.items()} | other
+        elif len_table_dict > len_other:
+            return {key: col[:len_other] for key, col in table_dict.items()} | other
+        else:
+            return table_dict | {key: col[:len_table_dict] for key, col in other.items()}
 
-    if reverse:
-        return {key: col[ids][::-1] for key, col in table_dict.items()}
-    return {key: col[ids] for key, col in table_dict.items()}
-def where_table_dict(table_dict, keys_array_list):
-    filter_array = keys_array_list[0]
-    if len(keys_array_list) > 1:
-        filter_array = np.logical_and.reduce(keys_array_list)
-    filter_array = np.where(filter_array)
-    return {key: col[filter_array] for key, col in table_dict.items()}
-def group_by_table_dict(table_dict: dict[str, np.ndarray], key_iter: Iterable):
-    group_ids_dict = group_by_dict(key_iter)
+    @classmethod
+    def concat(
+        cls,
+        table_dict: Table,
+        other: Table,
+        join_outer_left: bool = False,
+        join_outer_right: bool = False
+        ) -> Table:
+        if join_outer_left and join_outer_right:
+            if not table_dict:
+                return other
+            if not other:
+                return table_dict
+            len_table_dict = len(first(table_dict.values()))
+            len_other = len(first(other.values()))
+            return {key: np.append(
+                table_dict[key] if key in table_dict else np.full(len_table_dict, None),
+                other[key] if key in other else np.full(len_other, None)
+                ) for key in set(table_dict.keys()) | set(other.keys())}
+        elif join_outer_left:
+            if not table_dict:
+                return table_dict
+            len_table_dict = len(first(table_dict.values()))
+            len_other = len(first(other.values()))
+            return {key: np.append(
+                col,
+                other[key] if key in other else np.full(len_other, None)
+                ) for key, col in table_dict.items()}
+        elif join_outer_right:
+            if not other:
+                return other
+            len_table_dict = len(first(table_dict.values()))
+            len_other = len(first(other.values()))
+            return {key: np.append(
+                table_dict[key] if key in table_dict else np.full(len_table_dict, None),
+                col) for key, col in other.items()}
+        else:
+            if not table_dict:
+                return table_dict
+            if not other:
+                return other
+            len_table_dict = len(first(table_dict.values()))
+            len_other = len(first(other.values()))
+            return {key: np.append(table_dict[key], other[key]) for key in set(table_dict.keys()) & set(other.keys())}
 
-    group_array = np.empty(len(group_ids_dict), dtype=object)
-    for i, group in enumerate(group_ids_dict.values()):
-        group_array[i] = Qfrom({key: col[group] for key, col in table_dict.items()})
+    @classmethod
+    def concat_multiple(
+        cls,
+        table_dict: Table,
+        others: Iterable[Table],
+        join_outer_left: bool = False,
+        join_outer_right: bool = False,
+        ) -> Table:
+        result_dict = table_dict
+        for td in others:
+            result_dict = table.concat(result_dict, td, join_outer_left, join_outer_right)
+        return result_dict
+
+    @classmethod
+    def orderby(
+        cls,
+        table_dict: Table,
+        selection: Selection,
+        func: ColFunc,
+        reverse: bool
+        ) -> Table:
+        if not table_dict:
+            return table_dict
+
+        keys_array_list = get_keys_array_list(table_dict, selection, table_dict.keys(), func)
+
+        ids = None
+        if len(keys_array_list) == 1:
+            ids = np.argsort(keys_array_list[0])
+        else:
+            ids = np.lexsort(keys_array_list[::-1])
+
+        if reverse:
+            return {key: col[ids][::-1] for key, col in table_dict.items()}
+        return {key: col[ids] for key, col in table_dict.items()}
     
-    result_dict = {
-        #'key': list_to_array(list(group_ids_dict.keys())),
-        'key': iter_to_array(group_ids_dict.keys()),
-        'group': group_array}
+    @classmethod
+    def where(
+        cls, table_dict: Table,
+        selection: Selection = None,
+        func: ColFunc = None
+        ) -> Table:
+        if not table_dict:
+            return table_dict
+        keys_array_list = get_keys_array_list(table_dict, selection, table_dict.keys(), func)
+        
+        filter_array = keys_array_list[0]
+        if len(keys_array_list) > 1:
+            filter_array = np.logical_and.reduce(keys_array_list)
+        filter_array = np.where(filter_array)
+        return {key: col[filter_array] for key, col in table_dict.items()}
 
-    return result_dict
-def flatten_table_dict(table_dict: dict[str, np.ndarray], key: str):
-    key_array = table_dict[key]
-    item_ids = np.array([i for i, col in enumerate(key_array) for _ in col])
-    result_array = list_to_array([item for row in key_array for item in row])
-    return {k: col[item_ids] if k!=key else result_array for k, col in table_dict.items()}
-def unique_table_dict(table_dict: dict[str, np.ndarray], key_array: np.ndarray):
-    _, unique_ids = np.unique(key_array, return_index=True)
-    return {key: col[unique_ids] for key, col in table_dict.items()}
+    @classmethod
+    def groupby(
+        cls,
+        table_dict: Table,
+        selection: Selection,
+        func: ColFunc
+        ) -> Table:
+        if not table_dict:
+            return table_dict
+
+        keys_array_list = get_keys_array_list(table_dict, selection, table_dict.keys(), func)
+        key_iter = keys_array_list[0]
+        if len(keys_array_list) > 1:
+            #key_array = list_to_array(list(iter_array_list(keys_array_list)))
+            key_iter = iter_array_list(keys_array_list)
+
+        group_ids_dict = group_by_dict(key_iter)
+
+        group_array = np.empty(len(group_ids_dict), dtype=object)
+        #for i, group in enumerate(group_ids_dict.values()):
+        #    group_array[i] = Qfrom({key: col[group] for key, col in table_dict.items()})
+        group_array[:] = [Qfrom({key: col[group] for key, col in table_dict.items()}) for group in group_ids_dict.values()]
+
+        result_dict = {
+            #'key': list_to_array(list(group_ids_dict.keys())),
+            'key': iter_to_array(group_ids_dict.keys()),
+            'group': group_array}
+
+        return result_dict
+
+    @classmethod
+    def flatten(cls, table_dict: Table, key: str) -> Table:
+        if not table_dict:
+            return table_dict
+        key_array = table_dict[key]
+        item_ids = np.array([i for i, col in enumerate(key_array) for _ in col])
+        result_array = list_to_array([item for row in key_array for item in row])
+        return {k: col[item_ids] if k!=key else result_array for k, col in table_dict.items()}
+
+    @classmethod
+    def unique(cls, table_dict: Table, selection: Selection) -> Table:
+        if not table_dict:
+            return table_dict
+
+        selection = trans_select(selection, keys=table_dict.keys())
+        key_dict = {key: table_dict[key] for key in selection}
+        keys_array_list = list(key_dict.values())
+        key_array = array_tuple_to_tuple_array(keys_array_list)
+
+        _, unique_ids = np.unique(key_array, return_index=True)
+        return {key: col[unique_ids] for key, col in table_dict.items()}
+    
+    @classmethod
+    def value_counts(cls, table_dict: Table, selection: Selection) -> Table:
+        if not table_dict:
+            return table_dict
+
+        selection = trans_select(selection, keys=table_dict.keys())
+        key_dict = {key: table_dict[key] for key in selection}
+        keys_array_list = list(key_dict.values())
+        key_iter = iter_array_list(keys_array_list)
+        return key_array_to_value_counts(key_iter)
+
+    @classmethod
+    def remove(cls, table_dict: Table, selection: Selection) -> Table:
+        if not table_dict:
+            return table_dict
+
+        selection = trans_select(selection, keys=table_dict.keys())
+        return {key: col for key, col in table_dict.items() if key not in selection}
+
+    @classmethod
+    def rename(cls, table_dict: Table, map: dict[str, str]) -> Table:
+        if not table_dict:
+            return table_dict
+
+        return {map[key] if key in map else key: col for key, col in table_dict.items()}
+        
+
+
 def get_keys_array_list(
-    table_dict: dict[str,np.nearray],
+    table_dict: Table,
     selection: tuple[str]|list[str],
     keys: Iterable,
-    func: callable):
+    func: ColFunc
+    ) -> list[np.ndarray]:
     selection = trans_select(selection, keys)
     if not func:
         return [table_dict[key] for key in selection]
-    key_dict = map_table_dict(table_dict, selection, func)
+    key_dict = table.map(table_dict, selection, func)
     return list(key_dict.values())
 
-def calc_operations(table_dict, operation_list):
+def calc_operations(table_dict: Table, operation_list: list[dict[str,Any]]) -> Table:
     result_dict = table_dict
 
     for op in operation_list:
@@ -607,133 +794,118 @@ def calc_operations(table_dict, operation_list):
         match op['Operation']:
             case Operation.APPEND:
                 item = op['item']
-                result_dict = append_table_dict(result_dict, item)
+                result_dict = table.append(result_dict, item)
                 continue
             case Operation.SELECT:
-                if len(result_dict) == 0:
-                    continue
                 selection = op['selection']
 
-                selection = trans_select(selection, keys=result_dict.keys())
+                #selection = trans_select(selection, keys=result_dict.keys())
                 #result_dict = {key: result_dict[key] for key in selection}
-                result_dict = {key: col for key, col in result_dict.items() if key in selection}
+                #result_dict = {key: col for key, col in result_dict.items() if key in selection}
+                result_dict = table.select(result_dict, selection)
                 continue
             case Operation.MAP:
-                if len(result_dict) == 0:
-                    continue
                 args = op['args']
                 func = op['func']
                 out = op['out']
 
-                args = trans_select(args, keys=result_dict.keys())
-                mapped_dict = map_table_dict(result_dict, args, func, out)
-                result_dict = result_dict | mapped_dict
+                #args = trans_select(args, keys=result_dict.keys())
+                #mapped_dict = table.map(result_dict, args, func, out)
+                #result_dict = result_dict | mapped_dict
+                result_dict = table.map_join(result_dict, args, func, out)
                 continue
             case Operation.ORDERBY:
-                if len(result_dict) == 0:
-                    continue
                 selection = op['selection']
                 func = op['func']
                 reverse = op['reverse']
 
-                keys_array_list = get_keys_array_list(result_dict, selection, result_dict.keys(), func)
-                result_dict = order_by_table_dict(result_dict, keys_array_list, reverse)
+                #keys_array_list = get_keys_array_list(result_dict, selection, result_dict.keys(), func)
+                #result_dict = table.orderby(result_dict, keys_array_list, reverse)
+                result_dict = table.orderby(result_dict, selection, func, reverse)
                 continue
             case Operation.WHERE:
-                if len(result_dict) == 0:
-                    continue
                 selection = op['selection']
                 func = op['func']
 
-                keys_array_list = get_keys_array_list(result_dict, selection, result_dict.keys(), func)
-                result_dict = where_table_dict(result_dict, keys_array_list)
+                #keys_array_list = get_keys_array_list(result_dict, selection, result_dict.keys(), func)
+                #result_dict = table.where(result_dict, keys_array_list)
+                result_dict = table.where(result_dict, selection, func)
                 continue
             case Operation.GROUPBY:
-                if len(result_dict) == 0:
-                    continue
                 selection = op['selection']
                 func = op['func']
 
-                keys_array_list = get_keys_array_list(result_dict, selection, result_dict.keys(), func)
-                key_iter = keys_array_list[0]
-                if len(keys_array_list) > 1:
+                #keys_array_list = get_keys_array_list(result_dict, selection, result_dict.keys(), func)
+                #key_iter = keys_array_list[0]
+                #if len(keys_array_list) > 1:
                     #key_array = list_to_array(list(iter_array_list(keys_array_list)))
-                    key_iter = iter_array_list(keys_array_list)
-                result_dict = group_by_table_dict(result_dict, key_iter)
+                #    key_iter = iter_array_list(keys_array_list)
+                #result_dict = table.groupby(result_dict, key_iter)
+                result_dict = table.groupby(result_dict, selection, func)
                 continue
             case Operation.FLATTEN:
-                if len(result_dict) == 0:
-                    continue
                 key = op['key']
                 
-                result_dict = flatten_table_dict(result_dict, key)
+                result_dict = table.flatten(result_dict, key)
                 continue
             case Operation.UNIQUE:
-                if len(result_dict) == 0:
-                    continue
                 selection = op['selection']
 
-                selection = trans_select(selection, keys=result_dict.keys())
-                key_dict = {key: result_dict[key] for key in selection}
-                keys_array_list = list(key_dict.values())
-                key_array = array_tuple_to_tuple_array(keys_array_list)
-                result_dict = unique_table_dict(result_dict, key_array)
+                #selection = trans_select(selection, keys=result_dict.keys())
+                #key_dict = {key: result_dict[key] for key in selection}
+                #keys_array_list = list(key_dict.values())
+                #key_array = array_tuple_to_tuple_array(keys_array_list)
+                #result_dict = table.unique(result_dict, key_array)
+                result_dict = table.unique(result_dict, selection)
                 continue
             case Operation.VALUE_COUNTS:
-                if len(result_dict) == 0:
-                    continue
                 selection = op['selection']
 
-                selection = trans_select(selection, keys=result_dict.keys())
-                key_dict = {key: result_dict[key] for key in selection}
-                keys_array_list = list(key_dict.values())
-                key_iter = iter_array_list(keys_array_list)
-                result_dict = key_array_to_value_counts(key_iter)
+                #selection = trans_select(selection, keys=result_dict.keys())
+                #key_dict = {key: result_dict[key] for key in selection}
+                #keys_array_list = list(key_dict.values())
+                #key_iter = iter_array_list(keys_array_list)
+                #result_dict = key_array_to_value_counts(key_iter)
+                result_dict = table.value_counts(result_dict, selection)
                 continue
             case Operation.REMOVE:
-                if len(result_dict) == 0:
-                    continue
                 selection = op['selection']
 
-                selection = trans_select(selection, keys=result_dict.keys())
-                result_dict = {key: col for key, col in result_dict.items() if key not in selection}
+                #selection = trans_select(selection, keys=result_dict.keys())
+                #result_dict = {key: col for key, col in result_dict.items() if key not in selection}
+                result_dict = table.remove(result_dict, selection)
                 continue
             case Operation.RENAME:
-                if len(result_dict) == 0:
-                    continue
                 map = op['map']
 
-                result_dict = {map[key] if key in map else key: col for key, col in result_dict.items()}
+                #result_dict = {map[key] if key in map else key: col for key, col in result_dict.items()}
+                result_dict = table.rename(result_dict, map)
                 continue
             case Operation.JOIN:
-                if len(result_dict) == 0:
-                    continue
                 other = op['other']
                 key_dict = op['key_dict']
                 join_outer_left = op['join_outer_left']
                 join_outer_right = op['join_outer_right']
-                result_dict = join_table_dict(result_dict, other, key_dict, join_outer_left, join_outer_right)
+                
+                result_dict = table.join(result_dict, other, key_dict, join_outer_left, join_outer_right)
                 continue
             case Operation.JOINCROSS:
-                if len(result_dict) == 0:
-                    continue
                 other = op['other']
-                result_dict = join_cross_table_dict(result_dict, other)
+                result_dict = table.join_cross(result_dict, other)
                 continue
             case Operation.JOINID:
-                if len(result_dict) == 0:
-                    continue
                 other = op['other']
                 join_outer_left = op['join_outer_left']
                 join_outer_right = op['join_outer_right']
-                result_dict = join_id_table_dict(result_dict, other, join_outer_left, join_outer_right)
+                result_dict = table.join_id(result_dict, other, join_outer_left, join_outer_right)
                 continue
             case Operation.CONCAT:
                 others = op['others']
                 join_outer_left = op['join_outer_left']
                 join_outer_right = op['join_outer_right']
-                for td in others:
-                    result_dict = concat_table_dict(result_dict, td, join_outer_left, join_outer_right)
+                #for td in others:
+                #    result_dict = table.concat(result_dict, td, join_outer_left, join_outer_right)
+                result_dict = table.concat_multiple(result_dict, others, join_outer_left, join_outer_right)
                 continue
     
     return result_dict
@@ -782,14 +954,14 @@ class Qfrom():
     # - items
     # - (stats)
 
-    # - remove(selection: str|tuple[str]|list[str])
+    # - remove(selection: Selection)
     # - rename(map: dict[str, str])
-    # - select(selection: str|tuple[str]|list[str])
-    # - map(args: str|tuple[str]|list[str], func: callable, out=str|tuple[str]|list[str])
-    # - orderby(selection: str|tuple[str]|list[str], func: callable, reverse: bool)
+    # - select(selection: Selection)
+    # - map(args: Selection, func: ColFunc, out=Selection)
+    # - orderby(selection: Selection, func: ColFunc, reverse: bool)
 
-    # - where(selection: str|tuple[str]|list[str], predicate: callable)
-    # - groupby(selection: str|tuple[str]|list[str], func: callable)
+    # - where(selection: Selection, predicate: ColFunc)
+    # - groupby(selection: Selection, func: ColFunc)
     # - flatten
     # - unique
     # - value_counts
@@ -835,9 +1007,10 @@ class Qfrom():
         else:
             self.table_dict = {}
             if isinstance(collection, str):
-                self.table_dict = parse_iterables_to_arrays(parse_str_to_collection(collection))
+                #self.table_dict = parse.iterables_to_arrays(parse.str_to_collection(collection))
+                self.table_dict = parse.str_to_collection(collection)
             elif isinstance(collection, dict):
-                self.table_dict = parse_iterables_to_arrays(collection)
+                self.table_dict = parse.iterables_to_arrays(collection)
             elif isinstance(collection, Qfrom):
                 collection.calculate()
                 self.table_dict = {key:np.copy(value) for key, value in collection.table_dict.items()}
@@ -1013,8 +1186,8 @@ class Qfrom():
         return self.table_dict.items()
     # - (stats)
 
-    # - remove(selection: str|tuple[str]|list[str])
-    def remove(self, selection: str|tuple[str]|list[str]):
+    # - remove(selection: Selection)
+    def remove(self, selection: Selection):
         operation = {
             'Operation': Operation.REMOVE,
             'selection': selection,
@@ -1033,8 +1206,8 @@ class Qfrom():
             operation_list=self.__operation_list+[operation],
             table_dict=self.table_dict,
             )
-    # - select(selection: str|tuple[str]|list[str])
-    def select(self, selection: str|tuple[str]|list[str]) -> Qfrom:
+    # - select(selection: Selection)
+    def select(self, selection: Selection) -> Qfrom:
         operation = {
             'Operation': Operation.SELECT,
             'selection': selection,
@@ -1043,12 +1216,12 @@ class Qfrom():
             operation_list=self.__operation_list+[operation],
             table_dict=self.table_dict,
             )
-    # - map(args: str|tuple[str]|list[str], func: callable, out=str|tuple[str]|list[str])
+    # - map(args: Selection, func: ColFunc, out=Selection)
     def map(
         self,
-        args: str|tuple[str]|list[str]=None,
-        func: callable=None,
-        out: str|tuple[str]|list[str]=None
+        args: Selection=None,
+        func: ColFunc=None,
+        out: Selection=None
         ) -> Qfrom:
 
         operation = {
@@ -1061,8 +1234,13 @@ class Qfrom():
             operation_list=self.__operation_list+[operation],
             table_dict=self.table_dict,
             )
-    # - orderby(selection: str|tuple[str]|list[str], func: callable, reverse: bool)
-    def orderby(self, selection: str|tuple[str]|list[str]=None, func: callable=None, reverse: bool=False) -> Qfrom:
+    # - orderby(selection: Selection, func: ColFunc, reverse: bool)
+    def orderby(
+        self,
+        selection: Selection = None,
+        func: ColFunc = None,
+        reverse: bool = False
+        ) -> Qfrom:
         operation = {
             'Operation': Operation.ORDERBY,
             'selection': selection,
@@ -1074,8 +1252,12 @@ class Qfrom():
             table_dict=self.table_dict,
             )
 
-    # - where(selection: str|tuple[str]|list[str], predicate: callable)
-    def where(self, selection: str|tuple[str]|list[str]=None, func: callable=None) -> Qfrom:
+    # - where(selection: Selection, predicate: ColFunc)
+    def where(
+        self,
+        selection: Selection = None,
+        func: ColFunc = None
+        ) -> Qfrom:
         operation = {
             'Operation': Operation.WHERE,
             'selection': selection,
@@ -1085,8 +1267,12 @@ class Qfrom():
             operation_list=self.__operation_list+[operation],
             table_dict=self.table_dict,
             )
-    # - groupby(selection: str|tuple[str]|list[str], func: callable)
-    def groupby(self, selection: str|tuple[str]|list[str]=None, func: callable=None) -> Qfrom:
+    # - groupby(selection: Selection, func: ColFunc)
+    def groupby(
+        self,
+        selection: Selection = None,
+        func: ColFunc = None
+        )-> Qfrom:
         operation = {
             'Operation': Operation.GROUPBY,
             'selection': selection,
@@ -1107,7 +1293,7 @@ class Qfrom():
             table_dict=self.table_dict,
             )
     # - unique
-    def unique(self, selection: str|tuple[str]|list[str]) -> Qfrom:
+    def unique(self, selection: Selection) -> Qfrom:
         operation = {
             'Operation': Operation.UNIQUE,
             'selection': selection,
@@ -1117,7 +1303,7 @@ class Qfrom():
             table_dict=self.table_dict,
             )
     # - value_counts
-    def value_counts(self, selection: str|tuple[str]|list[str]) -> Qfrom:
+    def value_counts(self, selection: Selection) -> Qfrom:
         operation = {
             'Operation': Operation.VALUE_COUNTS,
             'selection': selection,
@@ -1128,7 +1314,7 @@ class Qfrom():
             )
 
     # - agg
-    def agg(self, func_tuple: callable|tuple[callable]) -> Any|tuple:
+    def agg(self, func_tuple: AggFunc|tuple[AggFunc]) -> Any|tuple[Any]:
         if any(self.__operation_list):
             self.calculate()
 
@@ -1242,7 +1428,7 @@ class Qfrom():
             self.__operation_list = []
         return self.table_dict
     # - call
-    def __call__(self, func: callable, *args: Any, **kwds: Any) -> Any:
+    def __call__(self, func: callable[[Qfrom,*Any], Any], *args: Any, **kwds: Any) -> Any:
         return func(self, *args, **kwds)
 
 
@@ -1655,7 +1841,7 @@ class out():
     # - (toset)
     # - todict
     @classmethod
-    def dict(cls, q: Qfrom) -> dict[str, np.ndarray]:
+    def dict(cls, q: Qfrom) -> Table:
         q.calculate()
         return q.table_dict
     # - toarray
