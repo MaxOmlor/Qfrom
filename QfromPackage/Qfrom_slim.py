@@ -1,6 +1,5 @@
 from __future__ import annotations
 from email.policy import default
-from pickle import FALSE
 import numpy as np
 import pandas as pd
 import re
@@ -9,7 +8,6 @@ import json
 import requests
 import chardet
 import inspect
-import enum
 import itertools
 from typing import Any, overload
 from collections import deque
@@ -936,10 +934,6 @@ class table():
             return tuple(agg_result)
         return agg_func
         
-
-
-
-
 
 
 class Qfrom():
