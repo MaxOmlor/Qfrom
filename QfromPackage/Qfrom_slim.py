@@ -51,8 +51,6 @@ def split_list_by_value(list_to_split: list, value: Any) -> tuple:
         start_id = end_id+1
     return splited_lists
    
-#def iter_table_dict(table_dict: dict):
-#    return iter_array_list(list(table_dict.values()))
 def iter_array_list(array_list: list[np.ndarray]) -> Iterable|None:
     # sourcery skip: assign-if-exp
     if not array_list:
@@ -407,6 +405,47 @@ class table():
         return list(key_dict.values())
 
     @classmethod
+    def iter(cls, table_dict: Table):
+        return iter_array_list(list(table_dict.values()))
+
+    @classmethod
+    def len(cls, table_dict: Table):
+        return len(first(table_dict.values())) if table_dict else 0
+
+    @classmethod
+    def eq(cls, other: Table) -> bool:
+        def agg_func(table_dict: Table) -> bool:
+            table_dict = parse.dict_to_table(table_dict)
+            _other = parse.dict_to_table(other)
+            if type(table_dict) is dict and type(_other) is dict:
+                return all(key in _other for key in table_dict)\
+                    and all(key in table_dict for key in _other)\
+                    and all(np.array_equal(col, _other[key]) for key, col in table_dict.items())
+            return False
+        return agg_func
+
+    @classmethod
+    def contains(cls, row: tuple[Any]|dict[str,Any]) -> Callable[[Table], Any|tuple[Any]]:
+        def agg_func(table_dict: Table) -> Any|tuple[Any]:
+            if type(row) is tuple:
+                candidate_ids = np.arange(cls.len(table_dict))
+                for i, key in enumerate(table_dict):
+                    candidate_ids = np.where(table_dict[key][candidate_ids]==row[i])[0]
+                    if candidate_ids.size == 0:
+                        return False
+                return True
+            if type(row) is dict:
+                candidate_ids = np.arange(cls.len(table_dict))
+                for key in table_dict:
+                    candidate_ids = np.where(table_dict[key][candidate_ids]==row[key])[0]
+                    if candidate_ids.size == 0:
+                        return False
+                return True
+
+            raise ValueError('row must be of type tuple or dict')
+        return agg_func
+
+    @classmethod
     def append(cls, item: tuple|dict[str,Any]) -> TableFunc:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
@@ -425,6 +464,15 @@ class table():
             key, col = first(table_dict.items())
             return {key:np.append(col, [item])}
         return table_func
+
+    @classmethod
+    def getrow(cls, index: int|slice) -> Callable[[Table], Any|tuple[Any]]:
+        def agg_func(table_dict: Table) -> Any|tuple[Any]:
+            table_dict = parse.dict_to_table(table_dict)
+            if isinstance(index, slice):
+                return {key: col[index] for key, col in table_dict.items()}
+            return tuple(col[index] for col in table_dict.values()) if len(list(table_dict.values())) != 1 else first(table_dict.values())[index]
+        return agg_func
 
     @classmethod
     def select(cls, selection: Selection) -> TableFunc:
@@ -835,8 +883,7 @@ class table():
 
             selected_keys = parse.selection(selection, keys=table_dict.keys())
             key_dict = {key: table_dict[key] for key in selected_keys}
-            keys_array_list = list(key_dict.values())
-            key_iter = iter_array_list(keys_array_list)
+            key_iter = cls.iter(key_dict)
             return key_array_to_value_counts(key_iter)
         return table_func
 
@@ -859,6 +906,35 @@ class table():
                 return table_dict
             return {map[key] if key in map else key: col for key, col in table_dict.items()}
         return table_func
+
+    @classmethod
+    def agg(cls, func_tuple: AggFunc|tuple[AggFunc]) -> Callable[[Table], Any|tuple[Any]]:
+        def agg_func(table_dict: Table) -> Any|tuple[Any]:
+            cols = list(table_dict.values())
+            if callable(func_tuple) and len(cols) > 1:
+                result = tuple(func_tuple(col) for col in cols)
+                return result
+            if callable(func_tuple):
+                result = func_tuple(cols[0])
+                return result
+
+            agg_result = []
+            not_used_columns = list(table_dict.values())
+            for func in func_tuple:
+                func_keys = get_keys_from_func(func, False)
+                if len(func_keys) > len(not_used_columns):
+                    raise ValueError('To many funcs for columns')
+                if '*' in func_keys:
+                    agg_result.append(func(*not_used_columns))
+                    not_used_columns = []
+                else:
+                    agg_result.append(func(*not_used_columns[:len(func_keys)]))
+                    not_used_columns = not_used_columns[len(func_keys):]
+
+            if len(agg_result) == 1:
+                return agg_result[0]
+            return tuple(agg_result)
+        return agg_func
         
 
 
@@ -945,7 +1021,6 @@ class Qfrom():
         else:
             self.table_dict = {}
             if isinstance(collection, str):
-                #self.table_dict = parse.iterables_to_arrays(parse.str_to_collection(collection))
                 self.table_dict = parse.str_to_collection(collection)
             elif isinstance(collection, dict):
                 self.table_dict = parse.iterables_to_arrays(collection)
@@ -979,11 +1054,7 @@ class Qfrom():
     # - eq
     def __eq__(self, other: Qfrom) -> bool:
         self.calculate()
-        if isinstance(other, Qfrom):
-            return all(key in other.table_dict for key in self.table_dict)\
-                and all(key in self.table_dict for key in other.table_dict)\
-                and all(np.array_equal(col, other.table_dict[key]) for key, col in self.table_dict.items())
-        return False
+        return isinstance(other, Qfrom) and table.eq(other.table_dict)(self.table_dict)
     # - str
     def __str__(self) -> str:
         self.calculate()
@@ -1064,7 +1135,7 @@ class Qfrom():
                 return tuple(col[args[0]] for col in self.table_dict.values()) if len(list(self.table_dict.values())) != 1 else first(self.table_dict.values())[args[0]]
             
             if isinstance(args[0], slice):
-                result = {col_name: col[args[0]] for col_name, col in self.table_dict.items()}
+                result = {key: col[args[0]] for key, col in self.table_dict.items()}
                 return Qfrom(result)
         
             if isinstance(args[0], tuple) and len(args[0]) == 2 and type(args[0][0]) is str and type(args[0][1]) is int:
@@ -1075,36 +1146,21 @@ class Qfrom():
         #    return self.select(*args[0])
         return self.select(*args)
     # - contains
-    def __contains__(self, item: Any|tuple|dict) -> bool:
-        self.calculate()
+    def __contains__(self, row: Any|tuple|dict) -> bool:
+        if any(self.__operation_list):
+            self.calculate()
+        return table.contains(row)(self.table_dict)
 
-        if type(item) is tuple:
-            candidate_ids = np.arange(len(self))
-            for i, col in enumerate(self.table_dict.keys()):
-                candidate_ids = np.where(self.table_dict[col][candidate_ids]==item[i])[0]
-                if candidate_ids.size == 0:
-                    return False
-            return True
-        if type(item) is dict:
-            candidate_ids = np.arange(len(self))
-            for col in self.table_dict.keys():
-                candidate_ids = np.where(self.table_dict[col][candidate_ids]==item[col])[0]
-                if candidate_ids.size == 0:
-                    return False
-            return True
-
-        raise ValueError('item must be of type tuple or dict')
     # - iter
     def __iter__(self) -> Iterable:
-        self.calculate()
-        return iter_array_list(list(self.table_dict.values()))
+        if any(self.__operation_list):
+            self.calculate()
+        return table.iter(self.table_dict)
     # - len
     def __len__(self) -> int:
         if any(self.__operation_list):
             self.calculate()
-        if len(self.table_dict) == 0:
-            return 0
-        return len(list(self.values())[0])
+        return table.len(self.table_dict)
 
     # - keys
     def keys(self) -> Iterable[str]:
@@ -1231,31 +1287,7 @@ class Qfrom():
     def agg(self, func_tuple: AggFunc|tuple[AggFunc]) -> Any|tuple[Any]:
         if any(self.__operation_list):
             self.calculate()
-
-        cols = list(self.values())
-        if callable(func_tuple) and len(cols) > 1:
-            result = tuple(func_tuple(col) for col in cols)
-            return result
-        if callable(func_tuple):
-            result = func_tuple(cols[0])
-            return result
-
-        agg_result = []
-        not_used_columns = list(self.table_dict.values())
-        for func in func_tuple:
-            func_keys = get_keys_from_func(func, False)
-            if len(func_keys) > len(not_used_columns):
-                raise ValueError('To many funcs for columns')
-            if '*' in func_keys:
-                agg_result.append(func(*not_used_columns))
-                not_used_columns = []
-            else:
-                agg_result.append(func(*not_used_columns[:len(func_keys)]))
-                not_used_columns = not_used_columns[len(func_keys):]
-
-        if len(agg_result) == 1:
-            return agg_result[0]
-        return tuple(agg_result)
+        return table.agg(func_tuple)(self.table_dict)
 
 
     # - join

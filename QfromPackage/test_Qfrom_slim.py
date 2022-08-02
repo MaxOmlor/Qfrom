@@ -434,7 +434,7 @@ class TestQfromClass(unittest.TestCase):
         #self.assertEqual(q[lambda a,i: (i,a), 'i,a'], Qfrom({'i':[0,1,2], 'a':[1,2,3]}))
     # - contains
     def test_contains(self):
-        q = Qfrom({'a': [1, 2, 3], 'b': [4, 5, 6]})
+        q = Qfrom({'a': [1, 2, 2, 3], 'b': [4, 6, 5, 6]})
 
         self.assertTrue((2, 5) in q)
         self.assertTrue({'a': 2, 'b':5} in q)
