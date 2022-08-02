@@ -382,7 +382,7 @@ class table():
         cls,
         table_dict: Table,
         selection: Selection,
-        func: ColFunc
+        func: ColFunc = None
         ) -> list[np.ndarray]:
 
         selection = parse.selection(selection, table_dict.keys())
@@ -743,13 +743,21 @@ class table():
         return result_dict
 
     @classmethod
-    def flatten(cls, table_dict: Table, key: str) -> Table:
+    def flatten(cls, table_dict: Table, selection: Selection, out: str = None) -> Table:
         if not table_dict:
             return table_dict
-        key_array = table_dict[key]
+
+        selection = parse.selection(selection, keys=table_dict.keys())
+
+        if not out:
+            out = selection[0]
+
+        key_array = table_dict[selection[0]] if len(selection) == 1 else list(iter_array_list(cls.__get_keys_array_list(table_dict, selection)))
         item_ids = np.array([i for i, col in enumerate(key_array) for _ in col])
         result_array = parse.list_to_array([item for row in key_array for item in row])
-        return {k: col[item_ids] if k!=key else result_array for k, col in table_dict.items()}
+        #return {k: col[item_ids] if k!=key else result_array for k, col in table_dict.items()}
+        #return table_dict | {out: result_array}
+        return {k: col[item_ids] for k, col in table_dict.items() if k!=out} | {out: result_array}
 
     @classmethod
     def unique(cls, table_dict: Table, selection: Selection) -> Table:
@@ -1133,8 +1141,11 @@ class Qfrom():
             table_dict=self.table_dict,
             )
     # - flatten
-    def flatten(self, key: str) -> Qfrom:
-        operation = (table.flatten, {'key': key})
+    def flatten(self, selection: Selection, out: str = None) -> Qfrom:
+        operation = (table.flatten, {
+            'selection': selection,
+            'out': out,
+        })
         return Qfrom(
             operation_list=self.__operation_list+[operation],
             table_dict=self.table_dict,
@@ -1481,7 +1492,7 @@ class col():
     #   - copy(n)
     #   - flatten -> autodetect out count
     @classmethod
-    def flatten(cls, array: np.ndarray) -> np.ndarray|tuple[np.ndarray]|dict[str,np.ndarray]:
+    def flatten(cls, array: np.ndarray) -> np.ndarray|tuple[np.ndarray]|Table:
         if len(array) == 0:
             return array
         out_count = len(array[0])

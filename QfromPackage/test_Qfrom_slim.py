@@ -653,12 +653,17 @@ class TestQfromClass(unittest.TestCase):
     def test_flatten(self):
         q1 = Qfrom({'a': [1, 2], 'b': [[3, 4], [5, 6]]})
         q2 = Qfrom({'a': [1, 2], 'b': [[(3, 4), (5, 6)], [(7, 8), (9, 10)]]})
+        q3 = Qfrom({'a': [1, 2], 'b': [3, 4]})
 
         q_result1 = Qfrom({'a': [1, 1, 2, 2], 'b': [3, 4, 5, 6]})
-        q_result2 = Qfrom({'a': [1, 1, 2, 2], 'b': [(3, 4), (5, 6), (7, 8), (9, 10)]})
+        q_result2 = Qfrom({'a': [1, 1, 2, 2], 'b': [[3, 4], [3, 4], [5, 6], [5, 6]], 'c': [3, 4, 5, 6]})
+        q_result3 = Qfrom({'a': [1, 1, 2, 2], 'b': [(3, 4), (5, 6), (7, 8), (9, 10)]})
+        q_result4 = Qfrom({'a': [1, 1, 2, 2], 'b': [3, 3, 4, 4], 'c': [1, 3, 2, 4]})
 
         self.assertEqual(q1.flatten('b'), q_result1)
-        self.assertEqual(q2.flatten('b'), q_result2)
+        self.assertEqual(q1.flatten('b', 'c'), q_result2)
+        self.assertEqual(q2.flatten('b'), q_result3)
+        self.assertEqual(q3.flatten('a, b', 'c'), q_result4)
     # - unique
     def test_unique(self):
         q = Qfrom({'a': [1, 2, 2, 3, 3], 'b': [4, 5, 5, 6, 7]})
