@@ -938,7 +938,6 @@ class Qfrom():
     def append(self, item: Any|tuple|dict) -> None:
         operation = (table.append, {'item': item})
         self.__operation_list.append(operation)
-        #self.__operation_list += [operation]
     # - setitem -> more dim slice support
     def __setitem__(self, key, newvalue):
         if any(self.__operation_list):
@@ -1228,7 +1227,6 @@ class Qfrom():
         join_right_outer: bool = False
         ) -> Qfrom:
         operation = (table.join_id, {
-            'other': other,
             'other': other.table_dict,
             'join_left_outer': join_left_outer,
             'join_right_outer': join_right_outer,
