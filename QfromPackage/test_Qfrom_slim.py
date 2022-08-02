@@ -1,5 +1,5 @@
 import unittest
-from Qfrom_slim import col, func, agg, plot, out, trans, Qfrom, list_to_array
+from Qfrom_slim import col, func, agg, plot, out, trans, Qfrom, parse
 import pandas as pd
 import numpy as np
 
@@ -638,10 +638,10 @@ class TestQfromClass(unittest.TestCase):
         q2 = Qfrom({'a': [1, 2, 3, 4], 'b': [5, 6, 7, 8]})
         q3 = Qfrom({'a': [1, 1, 2, 2], 'b': [3, 3, 3, 4], 'c': [5, 6, 7, 8]})
         
-        q_result1 = Qfrom({'key':[1, 2], 'group':list_to_array([Qfrom({'a':[1, 1], 'b':[5, 7]}), Qfrom({'a':[2, 2], 'b':[6, 8]})])})
-        q_result2 = Qfrom({'key':[1, 0], 'group':list_to_array([Qfrom({'a':[1, 3], 'b':[5, 7]}), Qfrom({'a':[2, 4], 'b':[6, 8]})])})
-        q_result3 = Qfrom({'key':[1, 2], 'group':list_to_array([Qfrom({'b':[5, 7]}), Qfrom({'b':[6, 8]})])})
-        q_result5 = Qfrom({'key':[(1, 3), (2, 3), (2, 4)], 'group':list_to_array([Qfrom({'a': [1, 1], 'b': [3, 3], 'c':[5, 6]}), Qfrom({'a': [2], 'b': [3], 'c':[7]}), Qfrom({'a': [2], 'b': [4], 'c':[8]})])})
+        q_result1 = Qfrom({'key':[1, 2], 'group': parse.list_to_array([Qfrom({'a':[1, 1], 'b':[5, 7]}), Qfrom({'a':[2, 2], 'b':[6, 8]})])})
+        q_result2 = Qfrom({'key':[1, 0], 'group': parse.list_to_array([Qfrom({'a':[1, 3], 'b':[5, 7]}), Qfrom({'a':[2, 4], 'b':[6, 8]})])})
+        q_result3 = Qfrom({'key':[1, 2], 'group': parse.list_to_array([Qfrom({'b':[5, 7]}), Qfrom({'b':[6, 8]})])})
+        q_result5 = Qfrom({'key':[(1, 3), (2, 3), (2, 4)], 'group': parse.list_to_array([Qfrom({'a': [1, 1], 'b': [3, 3], 'c':[5, 6]}), Qfrom({'a': [2], 'b': [3], 'c':[7]}), Qfrom({'a': [2], 'b': [4], 'c':[8]})])})
 
         self.assertEqual(q1.groupby('a'), q_result1)
         self.assertEqual(q1.groupby(('a',)), q_result1)

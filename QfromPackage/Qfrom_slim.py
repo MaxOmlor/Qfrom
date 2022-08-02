@@ -1,4 +1,5 @@
 from __future__ import annotations
+from email.policy import default
 from pickle import FALSE
 import numpy as np
 import pandas as pd
@@ -32,26 +33,6 @@ def first(iterable, predicate_func=None):
     if predicate_func:
         return next((item for item in iterable if predicate_func(item)), None)
     return next(iter(iterable))
-
-def will_be_tranformed_to_array(data):
-    class_dir = dir(type(data))
-    return '__len__' in class_dir and '__getitem__' in class_dir
-def list_to_array(l: list):
-    if not l or not will_be_tranformed_to_array(l[0]):
-        return np.array(l)
-    a = np.empty(len(l), dtype=object)
-    a[:] = l
-    return a
-def iter_to_array(iterable: Iterable):
-    first_item = next(iter(iterable))
-    if will_be_tranformed_to_array(first_item):
-        l = list(iterable)
-        a = np.empty(len(l), dtype=object)
-        a[:] = l
-        return a
-    else:
-        t = str(np.array(first_item).dtype)
-        return np.fromiter(iterable, dtype=t)
 
 def split_iterable(list_to_split: Iterable, predicate: callable) -> tuple[list, list]:
     true_list, false_list = [], []
@@ -97,7 +78,7 @@ def array_tuple_to_tuple_array(array_list: tuple[np.ndarray]|list[np.ndarray]) -
         return a
 
 def optimize_array_dtype(array):
-    return list_to_array(list(array))
+    return parse.list_to_array(list(array))
 
 
 
@@ -136,24 +117,13 @@ class parse():
         return text
 
     @classmethod
-    def iterable_to_array(cls, iterable: Iterable) -> np.ndarray:
-        iter_type = type(iterable)
-        if iter_type is np.ndarray:
-            return np.copy(iterable)
-        
-        if isinstance(iterable, list):
-            return list_to_array(iterable)
-
-        return iter_to_array(iterable)
-
-    @classmethod
-    def iterables_to_arrays(cls, table_dict) -> Table:
+    def iterables_to_arrays(cls, table_dict: Qfrom|Table) -> Table:
         table_dict_type = type(table_dict)
 
         if table_dict_type is Qfrom:
             return {key: np.copy(col) for key, col in table_dict.table_dict}
         if table_dict_type is dict:
-            return {col_name: cls.iterable_to_array(col) for col_name, col in table_dict.items()}
+            return {col_name: cls.iter_to_array(col) for col_name, col in table_dict.items()}
         raise ValueError(f'Parameter "table_dict" is no dict or Qfrom_tab. {table_dict=}')
 
     @classmethod
@@ -209,115 +179,151 @@ class parse():
                 col_text = f_col_text.read()
         return cls.try_str_to_collection(col_text, delimiter, headers)
 
-
-
-def seperate_keys_from_rest(select_t: list[str]):
-    def is_key(item):
-        return item not in ['*', '...', '.'] and not callable(item)
-
-    sep_select_t = []
-    current_list = []
-    last_item_is_key = None
-    last_item_is_key = False
-
-    for item in select_t:
-        item_is_key = is_key(item)
-        #if last_item_is_key is None or item_is_key == last_item_is_key:
-        if item_is_key == last_item_is_key:
-            current_list.append(item)
-        else:
-            sep_select_t.append(current_list)
-            current_list = [item]
+    @classmethod
+    def __will_be_transformed_to_array(cls, data) -> bool:
+        class_dir = dir(type(data))
+        return '__len__' in class_dir and '__getitem__' in class_dir
+    @classmethod
+    def list_to_array(cls, l: list) -> np.ndarray:
+        if not l or not cls.__will_be_transformed_to_array(l[0]):
+            return np.array(l)
+        a = np.empty(len(l), dtype=object)
+        a[:] = l
+        return a
+    @classmethod
+    def iter_to_array(cls, iterable: Iterable) -> np.ndarray:
+        iter_type = type(iterable)
+        if iter_type is np.ndarray:
+            return np.copy(iterable)
         
-        last_item_is_key = item_is_key
-
-    sep_select_t.append(current_list)
-    return sep_select_t
-def get_key_intervals(sep_select_t: list[list[str]], keys: tuple[str]):
-    key_items_list = sep_select_t[1::2]
-    key_items_list.append(None)
-    #print(f'{no_key_items=}, {key_items=}')
-
-    start_id = 0
-    intervals = []
-    for key_items in key_items_list:
-        end_id = len(keys)
-        if key_items:
-            end_id = keys.index(key_items[0])
-        intervals.append(keys[start_id:end_id])
-        if key_items:
-            start_id = keys.index(key_items[-1])+1
-
-    return intervals
-def seperate_not_key_part(no_key_part) -> tuple:
-    prefix_group = []
-    point_group = []
-    suffix_group = []
-    points_occured = False
-
-    for item in no_key_part:
-        if item == '...':
-            points_occured = True
-            point_group.append(item)
-        elif points_occured:
-            suffix_group.append(item)
+        if isinstance(iterable, list):
+            return cls.list_to_array(iterable)
+            
+        first_item = next(iter(iterable))
+        if cls.__will_be_transformed_to_array(first_item):
+            l = list(iterable)
+            a = np.empty(len(l), dtype=object)
+            a[:] = l
+            return a
         else:
-            prefix_group.append(item)
+            t = str(np.array(first_item).dtype)
+            return np.fromiter(iterable, dtype=t)
 
-    return prefix_group, point_group, suffix_group
-def partition_keys(sep_no_key_parts, intervals, keys):
-    keys = list(keys)
-    #print(f'{sep_no_key_parts=}, {intervals=}')
-    no_key_parts = []
-    for (prefix_group, point_group, suffix_group), interval\
-        in zip(sep_no_key_parts, intervals):
-        if len(prefix_group) == 1 and prefix_group[0] == '*':
-            no_key_parts.append(keys)
-        else:
-            mod_interval = list(interval)
-            mod_prefix_group = [mod_interval.pop(0) for keys in prefix_group for _ in keys]
-            mod_suffix_group = [key for keys in suffix_group[::-1] for key in [mod_interval.pop() for _ in keys][::-1]][::-1]
-            mod_point_group = mod_interval if len(point_group) > 0 else []
+    @classmethod
+    def __seperate_keys_from_rest(cls, select_t: list[str]):
+        def is_key(item):
+            return item not in ['*', '...', '.'] and not callable(item)
 
-            no_key_parts.append(mod_prefix_group+mod_point_group+mod_suffix_group)
+        sep_select_t = []
+        current_list = []
+        last_item_is_key = None
+        last_item_is_key = False
 
-    return no_key_parts
-def trans_select(selection: Selection, keys: tuple[str]) -> list[str]:
-    if selection is None:
-        return None
-    if type(selection) is str:
-        selection = tuple(item.strip() for item in selection.split(','))
-    if type(keys) is not tuple:
-        keys = tuple(keys)
-    if all(s in keys for s in selection):
-        return selection
+        for item in select_t:
+            item_is_key = is_key(item)
+            #if last_item_is_key is None or item_is_key == last_item_is_key:
+            if item_is_key == last_item_is_key:
+                current_list.append(item)
+            else:
+                sep_select_t.append(current_list)
+                current_list = [item]
+            
+            last_item_is_key = item_is_key
 
-    # check mapping element types and names
-    special_str = ('*','...','.')
-    possible_keys = keys+special_str
-    not_valid_keys = [key not in possible_keys for key in selection]
-    if all(not_valid_keys):
-        raise ValueError(f'{not_valid_keys} are no valid keys')
+        sep_select_t.append(current_list)
+        return sep_select_t
+    @classmethod
+    def __get_key_intervals(cls, sep_select_t: list[list[str]], keys: tuple[str]):
+        key_items_list = sep_select_t[1::2]
+        key_items_list.append(None)
+        #print(f'{no_key_items=}, {key_items=}')
 
-    sep_select_t = seperate_keys_from_rest(selection)
-    intervals = get_key_intervals(sep_select_t, keys)
+        start_id = 0
+        intervals = []
+        for key_items in key_items_list:
+            end_id = len(keys)
+            if key_items:
+                end_id = keys.index(key_items[0])
+            intervals.append(keys[start_id:end_id])
+            if key_items:
+                start_id = keys.index(key_items[-1])+1
 
-    #check for not_key_parts conditions
-    no_key_parts = sep_select_t[::2]
-    key_parts = sep_select_t[1::2]
-    if any('*' in part and len(part) > 1 for part in no_key_parts):
-        raise ValueError("'*' cant be the direct neighbor of ['...', '.', func]")
-    if any(len([item for item in part if item == '...']) > 1 for part in no_key_parts):
-        raise ValueError("there can not be more than one '...' between two keys.")
+        return intervals
+    @classmethod
+    def __seperate_not_key_part(cls, no_key_part) -> tuple:
+        prefix_group = []
+        point_group = []
+        suffix_group = []
+        points_occured = False
 
-    sep_no_key_parts = [seperate_not_key_part(part) for part in no_key_parts]
-    no_key_parts = partition_keys(sep_no_key_parts, intervals, keys)
+        for item in no_key_part:
+            if item == '...':
+                points_occured = True
+                point_group.append(item)
+            elif points_occured:
+                suffix_group.append(item)
+            else:
+                prefix_group.append(item)
 
-    #key_parts = list(key_parts)
-    sep_select_t[::2] = no_key_parts
-    sep_select_t[1::2] = key_parts
+        return prefix_group, point_group, suffix_group
+    @classmethod
+    def __partition_keys(cls, sep_no_key_parts, intervals, keys):
+        keys = list(keys)
+        #print(f'{sep_no_key_parts=}, {intervals=}')
+        no_key_parts = []
+        for (prefix_group, point_group, suffix_group), interval\
+            in zip(sep_no_key_parts, intervals):
+            if len(prefix_group) == 1 and prefix_group[0] == '*':
+                no_key_parts.append(keys)
+            else:
+                mod_interval = list(interval)
+                mod_prefix_group = [mod_interval.pop(0) for keys in prefix_group for _ in keys]
+                mod_suffix_group = [key for keys in suffix_group[::-1] for key in [mod_interval.pop() for _ in keys][::-1]][::-1]
+                mod_point_group = mod_interval if len(point_group) > 0 else []
 
-    return tuple(item for part in sep_select_t for item in part)
+                no_key_parts.append(mod_prefix_group+mod_point_group+mod_suffix_group)
+
+        return no_key_parts
+    @classmethod
+    def selection(cls, selection: Selection, keys: tuple[str]) -> list[str]:
+        if selection is None:
+            return None
+        if type(selection) is str:
+            selection = tuple(item.strip() for item in selection.split(','))
+        if type(keys) is not tuple:
+            keys = tuple(keys)
+        if all(s in keys for s in selection):
+            return selection
+
+        # check mapping element types and names
+        special_str = ('*','...','.')
+        possible_keys = keys+special_str
+        not_valid_keys = [key not in possible_keys for key in selection]
+        if all(not_valid_keys):
+            raise ValueError(f'{not_valid_keys} are no valid keys')
+
+        sep_select_t = cls.__seperate_keys_from_rest(selection)
+        intervals = cls.__get_key_intervals(sep_select_t, keys)
+
+        #check for not_key_parts conditions
+        no_key_parts = sep_select_t[::2]
+        key_parts = sep_select_t[1::2]
+        if any('*' in part and len(part) > 1 for part in no_key_parts):
+            raise ValueError("'*' cant be the direct neighbor of ['...', '.', func]")
+        if any(len([item for item in part if item == '...']) > 1 for part in no_key_parts):
+            raise ValueError("there can not be more than one '...' between two keys.")
+
+        sep_no_key_parts = [cls.__seperate_not_key_part(part) for part in no_key_parts]
+        no_key_parts = cls.__partition_keys(sep_no_key_parts, intervals, keys)
+
+        #key_parts = list(key_parts)
+        sep_select_t[::2] = no_key_parts
+        sep_select_t[1::2] = key_parts
+
+        return tuple(item for part in sep_select_t for item in part)
+
+
+
 def get_keys_from_func_args(func: callable, keys):
     func_args = get_keys_from_func(func)
     kwrgs = False
@@ -343,10 +349,10 @@ def get_keys_from_func_args(func: callable, keys):
 
 
 
-
 def group_by_dict(key_iter: Iterable):
     group_ids_dict = {}
     for i, key in enumerate(key_iter):
+        #group_ids_dict.get(key, deque()).append(i)
         if key not in group_ids_dict:
             #group_ids_dict[key] = []
             group_ids_dict[key] = deque()
@@ -362,29 +368,43 @@ def key_array_to_value_counts(key_iter: Iterable) -> Table:
         unique_id_dict[key] += 1
     
     return {
-        #'value': list_to_array(list(unique_id_dict.keys())),
-        'value': iter_to_array(unique_id_dict.keys()),
+        #'value': parse.list_to_array(list(unique_id_dict.keys())),
+        'value': parse.iter_to_array(unique_id_dict.keys()),
         #'count': np.array(list(unique_id_dict.values()))
-        'count': iter_to_array(unique_id_dict.values())
+        'count': parse.iter_to_array(unique_id_dict.values())
         }
 
 
 
 class table():
     @classmethod
+    def __get_keys_array_list(
+        cls,
+        table_dict: Table,
+        selection: Selection,
+        func: ColFunc
+        ) -> list[np.ndarray]:
+
+        selection = parse.selection(selection, table_dict.keys())
+        if not func:
+            return [table_dict[key] for key in selection]
+        key_dict = table.map(table_dict, selection, func)
+        return list(key_dict.values())
+
+    @classmethod
     def append(cls, table_dict: Table, item: tuple|dict[str,Any]) -> Table:
         if type(item) is tuple:
             if not table_dict and len(item) == 1:
-                return {'y': list_to_array([item[0]])}
+                return {'y': parse.list_to_array([item[0]])}
             if not table_dict:
-                return {f'y{i}': list_to_array([value]) for i, value in enumerate(item)}
+                return {f'y{i}': parse.list_to_array([value]) for i, value in enumerate(item)}
             return {key:np.append(col, [item[i]]) for i, (key, col) in enumerate(table_dict.items())}
 
         if type(item) is dict:
-            return {key: np.append(col, [item[key]]) for key, col in table_dict.items()} if table_dict else {key: list_to_array([value]) for key, value in item.items()}
+            return {key: np.append(col, [item[key]]) for key, col in table_dict.items()} if table_dict else {key: parse.list_to_array([value]) for key, value in item.items()}
 
         if not table_dict:
-            return {'y': list_to_array([item])}
+            return {'y': parse.list_to_array([item])}
         key, col = first(table_dict.items())
         return {key:np.append(col, [item])}
 
@@ -392,7 +412,7 @@ class table():
     def select(cls, table_dict: Table, selection: Selection) -> Table:
         if not table_dict:
             return table_dict
-        selection = trans_select(selection, keys=table_dict.keys())
+        selection = parse.selection(selection, keys=table_dict.keys())
         #return {key: table_dict[key] for key in selection}
         return {key: col for key, col in table_dict.items() if key in selection}
     
@@ -407,7 +427,7 @@ class table():
         if not table_dict:
             return table_dict
 
-        args = trans_select(args, keys=table_dict.keys())
+        args = parse.selection(args, keys=table_dict.keys())
 
         if type(out) is str:
             out = [key.strip() for key in out.split(',')]
@@ -455,19 +475,19 @@ class table():
 
         if inspect.isgenerator(func_result) and len(table_dict) > 0 and out is not None:
             first_col = first(table_dict.values())
-            return {out[0]: list_to_array([next(func_result) for _ in first_col])}
+            return {out[0]: parse.list_to_array([next(func_result) for _ in first_col])}
         if inspect.isgenerator(func_result) and len(table_dict) > 0 and len(args) > 0:
             first_col = first(table_dict.values())
-            return {args[0]: list_to_array([next(func_result) for _ in first_col])}
+            return {args[0]: parse.list_to_array([next(func_result) for _ in first_col])}
         if inspect.isgenerator(func_result) and len(table_dict) > 0:
             first_col = first(table_dict.values())
-            return {'y': list_to_array([next(func_result) for _ in first_col])}
+            return {'y': parse.list_to_array([next(func_result) for _ in first_col])}
 
         #if type(func_result) is not np.ndarray and isinstance(func_result, Iterable):
         if type(func_result) is not np.ndarray and type(func_result) is list:
-            func_result = list_to_array(func_result)
+            func_result = parse.list_to_array(func_result)
         if type(func_result) is not np.ndarray and type(func_result) is Iterable:
-            func_result = iter_to_array(func_result)
+            func_result = parse.iter_to_array(func_result)
         if type(func_result) is np.ndarray and out is not None:
             return {out[0]: func_result}
         if type(func_result) is np.ndarray and len(args) > 0:
@@ -477,13 +497,13 @@ class table():
 
         if table_dict and out is not None:
             first_col = first(table_dict.values())
-            return {out[0]: list_to_array([func_result for _ in first_col])}
+            return {out[0]: parse.list_to_array([func_result for _ in first_col])}
         if table_dict and len(args) > 0:
             first_col = first(table_dict.values())
-            return {args[0]: list_to_array([func_result for _ in first_col])}
+            return {args[0]: parse.list_to_array([func_result for _ in first_col])}
         if table_dict:
             first_col = first(table_dict.values())
-            return {'y': list_to_array([func_result for _ in first_col])}
+            return {'y': parse.list_to_array([func_result for _ in first_col])}
 
         raise ValueError('cant interpret func result')    
     
@@ -664,7 +684,7 @@ class table():
         if not table_dict:
             return table_dict
 
-        keys_array_list = get_keys_array_list(table_dict, selection, table_dict.keys(), func)
+        keys_array_list = cls.__get_keys_array_list(table_dict, selection, func)
 
         ids = None
         if len(keys_array_list) == 1:
@@ -684,7 +704,7 @@ class table():
         ) -> Table:
         if not table_dict:
             return table_dict
-        keys_array_list = get_keys_array_list(table_dict, selection, table_dict.keys(), func)
+        keys_array_list = cls.__get_keys_array_list(table_dict, selection, func)
         
         filter_array = keys_array_list[0]
         if len(keys_array_list) > 1:
@@ -702,10 +722,10 @@ class table():
         if not table_dict:
             return table_dict
 
-        keys_array_list = get_keys_array_list(table_dict, selection, table_dict.keys(), func)
+        keys_array_list = cls.__get_keys_array_list(table_dict, selection, func)
         key_iter = keys_array_list[0]
         if len(keys_array_list) > 1:
-            #key_array = list_to_array(list(iter_array_list(keys_array_list)))
+            #key_array = parse.list_to_array(list(iter_array_list(keys_array_list)))
             key_iter = iter_array_list(keys_array_list)
 
         group_ids_dict = group_by_dict(key_iter)
@@ -716,8 +736,8 @@ class table():
         group_array[:] = [Qfrom({key: col[group] for key, col in table_dict.items()}) for group in group_ids_dict.values()]
 
         result_dict = {
-            #'key': list_to_array(list(group_ids_dict.keys())),
-            'key': iter_to_array(group_ids_dict.keys()),
+            #'key': parse.list_to_array(list(group_ids_dict.keys())),
+            'key': parse.iter_to_array(group_ids_dict.keys()),
             'group': group_array}
 
         return result_dict
@@ -728,7 +748,7 @@ class table():
             return table_dict
         key_array = table_dict[key]
         item_ids = np.array([i for i, col in enumerate(key_array) for _ in col])
-        result_array = list_to_array([item for row in key_array for item in row])
+        result_array = parse.list_to_array([item for row in key_array for item in row])
         return {k: col[item_ids] if k!=key else result_array for k, col in table_dict.items()}
 
     @classmethod
@@ -736,7 +756,7 @@ class table():
         if not table_dict:
             return table_dict
 
-        selection = trans_select(selection, keys=table_dict.keys())
+        selection = parse.selection(selection, keys=table_dict.keys())
         key_dict = {key: table_dict[key] for key in selection}
         keys_array_list = list(key_dict.values())
         key_array = array_tuple_to_tuple_array(keys_array_list)
@@ -749,7 +769,7 @@ class table():
         if not table_dict:
             return table_dict
 
-        selection = trans_select(selection, keys=table_dict.keys())
+        selection = parse.selection(selection, keys=table_dict.keys())
         key_dict = {key: table_dict[key] for key in selection}
         keys_array_list = list(key_dict.values())
         key_iter = iter_array_list(keys_array_list)
@@ -760,7 +780,7 @@ class table():
         if not table_dict:
             return table_dict
 
-        selection = trans_select(selection, keys=table_dict.keys())
+        selection = parse.selection(selection, keys=table_dict.keys())
         return {key: col for key, col in table_dict.items() if key not in selection}
 
     @classmethod
@@ -772,25 +792,7 @@ class table():
         
 
 
-def get_keys_array_list(
-    table_dict: Table,
-    selection: tuple[str]|list[str],
-    keys: Iterable,
-    func: ColFunc
-    ) -> list[np.ndarray]:
-    selection = trans_select(selection, keys)
-    if not func:
-        return [table_dict[key] for key in selection]
-    key_dict = table.map(table_dict, selection, func)
-    return list(key_dict.values())
 
-def calc_operations(table_dict: Table, operation_list: list[dict[str,Any]]) -> Table:
-    result_dict = table_dict
-
-    for func, kwrgs in operation_list:
-        result_dict = func(result_dict, **kwrgs)
-    
-    return result_dict
 
 
 
@@ -892,13 +894,13 @@ class Qfrom():
                 if len(collection_list) > 0:
                     first_item = first(collection_list)
                     if isinstance(first_item, dict):
-                        self.table_dict = {key: list_to_array([item[key] for item in collection_list]) for key in first_item.keys()}
+                        self.table_dict = {key: parse.list_to_array([item[key] for item in collection_list]) for key in first_item.keys()}
                     elif (isinstance(first_item, tuple) or isinstance(first_item, list)) and len(first_item) == 1:
-                        self.table_dict = {f'y': list_to_array([item[0] for item in collection_list])}
+                        self.table_dict = {f'y': parse.list_to_array([item[0] for item in collection_list])}
                     elif (isinstance(first_item, tuple) or isinstance(first_item, list)) and len(first_item) > 1:
-                        self.table_dict = {f'y{i}': list_to_array([item[i] for item in collection_list]) for i in range(len(first_item))}
+                        self.table_dict = {f'y{i}': parse.list_to_array([item[i] for item in collection_list]) for i in range(len(first_item))}
                     else:
-                        self.table_dict = {'y': list_to_array(collection_list)}
+                        self.table_dict = {'y': parse.list_to_array(collection_list)}
         
         #test if all cols have the same length
         #first_len = len(first(self.table_dict.values()))
@@ -1274,12 +1276,13 @@ class Qfrom():
     # - calc
     def calculate(self) -> dict[str, np.ndarray]:
         if any(self.__operation_list):
-            #self.table_dict = calc_operations(dict(self.table_dict), self.__operation_list)
-            self.table_dict = calc_operations(self.table_dict, self.__operation_list)
+            for func, kwrgs in self.__operation_list:
+                self.table_dict = func(self.table_dict, **kwrgs)
+            
             self.__operation_list = []
         return self.table_dict
     # - call
-    def __call__(self, func: callable[[Qfrom,*Any], Any], *args: Any, **kwds: Any) -> Any:
+    def __call__(self, func: Callable[[Qfrom,*Any], Any], *args: Any, **kwds: Any) -> Any:
         return func(self, *args, **kwds)
 
 
@@ -1398,10 +1401,10 @@ class col():
     @classmethod
     def min_colname(cls, **kwrgs):
         array_tuple = np.array(list(kwrgs.values()))
-        #array_tuple = iter_to_array(kwrgs.values())
+        #array_tuple = parse.iter_to_array(kwrgs.values())
         ids = np.argmin(array_tuple, axis=0)
         #key_array = np.array(list(kwrgs.keys()))
-        key_array = iter_to_array(kwrgs.keys())
+        key_array = parse.iter_to_array(kwrgs.keys())
         return key_array[ids]
     #   - max
     @classmethod
@@ -1413,10 +1416,10 @@ class col():
     @classmethod
     def max_colname(cls, **kwrgs):
         array_tuple = np.array(list(kwrgs.values()))
-        #array_tuple = iter_to_array(kwrgs.values())
+        #array_tuple = parse.iter_to_array(kwrgs.values())
         ids = np.argmax(array_tuple, axis=0)
         #key_array = np.array(list(kwrgs.keys()))
-        key_array = iter_to_array(kwrgs.keys())
+        key_array = parse.iter_to_array(kwrgs.keys())
         return key_array[ids]
     #   - sum
     @classmethod
@@ -1706,7 +1709,7 @@ class out():
             return first(q.table_dict.values())
 
         #result = np.array(list(q.table_dict.values())[::-1])
-        result = iter_to_array(q.table_dict.values())[::-1]
+        result = parse.iter_to_array(q.table_dict.values())[::-1]
         result = np.rot90(result, 3)
         return result
     # - (tomtx)
