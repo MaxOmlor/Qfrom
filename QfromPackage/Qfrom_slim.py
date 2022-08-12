@@ -994,6 +994,14 @@ class table():
             return Pipe(agg_func)
         return agg_func
         
+    @classmethod
+    def topy(cls, as_pipe: bool=True) -> Callable[[Table], dict[str, list]] | Pipe[Callable[[Table], dict[str, list]]]:
+        def table_func(table_dict: Table) -> Table:
+            return {key: col.tolist() for key, col in table_dict.items()}
+        if as_pipe:
+            return Pipe(table_func)
+        return table_func
+
 
 class Pipe():
     def __init__(self, func: Callable):
