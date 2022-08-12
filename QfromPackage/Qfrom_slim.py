@@ -457,15 +457,18 @@ class table():
                     return {'y': parse.list_to_array([item[0]])}
                 if not table_dict:
                     return {f'y{i}': parse.list_to_array([value]) for i, value in enumerate(item)}
-                return {key:np.append(col, [item[i]]) for i, (key, col) in enumerate(table_dict.items())}
+                item_arrays = [np.array([x]) for x in item]
+                return {key: np.append(col if len(col) > 0 else np.array([], dtype=item_arrays[i].dtype), item_arrays[i]) for i, (key, col) in enumerate(table_dict.items())}
 
             if type(item) is dict:
-                return {key: np.append(col, [item[key]]) for key, col in table_dict.items()} if table_dict else {key: parse.list_to_array([value]) for key, value in item.items()}
+                item_arrays = {key: np.array([value]) for key, value in item.items()}
+                return {key: np.append(col if len(col) > 0 else np.array([], dtype=item_arrays[key].dtype), item_arrays[key]) for key, col in table_dict.items()} if table_dict else {key: parse.list_to_array([value]) for key, value in item.items()}
 
             if not table_dict:
                 return {'y': parse.list_to_array([item])}
             key, col = first(table_dict.items())
-            return {key:np.append(col, [item])}
+            item_array = np.array([item])
+            return {key:np.append(col if len(col) > 0 else np.array([], dtype=item_array.dtype), [item])}
         if as_pipe:
             return Pipe(table_func)
         return table_func
