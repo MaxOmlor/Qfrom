@@ -412,7 +412,7 @@ class table():
         return len(first(table_dict.values())) if table_dict else 0
 
     @classmethod
-    def eq(cls, other: Table, as_pipe: bool=True) -> bool:
+    def eq(cls, other: Table, as_pipe: bool=True) -> Callable[[Table], bool] | Pipe[Callable[[Table], bool]]:
         def agg_func(table_dict: Table) -> bool:
             table_dict = parse.dict_to_table(table_dict)
             _other = parse.dict_to_table(other)
@@ -426,7 +426,7 @@ class table():
         return agg_func
 
     @classmethod
-    def contains(cls, row: tuple[Any]|dict[str,Any], as_pipe: bool=True) -> Callable[[Table], Any|tuple[Any]]:
+    def contains(cls, row: tuple[Any]|dict[str,Any], as_pipe: bool=True) -> Callable[[Table], bool] | Pipe[Callable[[Table], bool]]:
         def agg_func(table_dict: Table) -> Any|tuple[Any]:
             if type(row) is tuple:
                 candidate_ids = np.arange(cls.len(table_dict))
@@ -449,7 +449,7 @@ class table():
         return agg_func
 
     @classmethod
-    def append(cls, item: tuple|dict[str,Any], as_pipe: bool=True) -> TableFunc:
+    def append(cls, item: tuple|dict[str,Any], as_pipe: bool=True) -> TableFunc | Pipe[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if type(item) is tuple:
@@ -471,7 +471,7 @@ class table():
         return table_func
 
     @classmethod
-    def getrow(cls, index: int|slice, as_pipe: bool=True) -> Callable[[Table], Any|tuple[Any]]:
+    def getrow(cls, index: int|slice, as_pipe: bool=True) -> Callable[[Table], Any|tuple[Any]] | Pipe[Callable[[Table], Any|tuple[Any]]]:
         def agg_func(table_dict: Table) -> Any|tuple[Any]:
             table_dict = parse.dict_to_table(table_dict)
             if isinstance(index, slice):
@@ -482,7 +482,7 @@ class table():
         return agg_func
 
     @classmethod
-    def select(cls, selection: Selection, as_pipe: bool=True) -> TableFunc:
+    def select(cls, selection: Selection, as_pipe: bool=True) -> TableFunc | Pipe[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if not table_dict:
@@ -501,7 +501,7 @@ class table():
         func: ColFunc = None,
         out: Selection = None,
         as_pipe: bool=True
-        ) -> TableFunc:
+        ) -> TableFunc | Pipe[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if not table_dict:
@@ -598,7 +598,7 @@ class table():
         func: ColFunc = None,
         out: Selection = None,
         as_pipe: bool=True
-        ) -> TableFunc:
+        ) -> TableFunc | Pipe[TableFunc]:
         map_func = table.map(args, func, out)
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
@@ -617,7 +617,7 @@ class table():
         join_left_outer: bool = False, 
         join_right_outer: bool = False,
         as_pipe: bool=True
-        ) -> TableFunc:
+        ) -> TableFunc | Pipe[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if not table_dict:
@@ -668,7 +668,7 @@ class table():
         return table_func
     
     @classmethod
-    def join_cross(cls, other: Table, as_pipe: bool=True) -> TableFunc:
+    def join_cross(cls, other: Table, as_pipe: bool=True) -> TableFunc | Pipe[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if not table_dict:
@@ -696,7 +696,7 @@ class table():
         join_left_outer: bool = False,
         join_right_outer: bool = False,
         as_pipe: bool=True
-        ) -> TableFunc:
+        ) -> TableFunc | Pipe[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if not table_dict:
@@ -729,7 +729,7 @@ class table():
         join_left_outer: bool = False,
         join_right_outer: bool = False,
         as_pipe: bool=True
-        ) -> TableFunc:
+        ) -> TableFunc | Pipe[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if join_left_outer and join_right_outer:
@@ -779,7 +779,7 @@ class table():
         join_left_outer: bool = False,
         join_right_outer: bool = False,
         as_pipe: bool=True
-        ) -> TableFunc:
+        ) -> TableFunc | Pipe[TableFunc]:
         concat_func_list = [table.concat(other, join_left_outer, join_right_outer) for other in others]
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
@@ -799,7 +799,7 @@ class table():
         func: ColFunc,
         reverse: bool,
         as_pipe: bool=True
-        ) -> TableFunc:
+        ) -> TableFunc | Pipe[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if not table_dict:
@@ -826,7 +826,7 @@ class table():
         selection: Selection = None,
         func: ColFunc = None,
         as_pipe: bool=True
-        ) -> TableFunc:
+        ) -> TableFunc | Pipe[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if not table_dict:
@@ -849,7 +849,7 @@ class table():
         func: ColFunc = None,
         group_class: Any=None,
         as_pipe: bool=True
-        ) -> Table:
+        ) -> Table | Pipe[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if not table_dict:
@@ -884,7 +884,7 @@ class table():
         return table_func
 
     @classmethod
-    def flatten(cls, selection: Selection, out: str = None, as_pipe: bool=True) -> TableFunc:
+    def flatten(cls, selection: Selection, out: str = None, as_pipe: bool=True) -> TableFunc | Pipe[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if not table_dict:
@@ -907,7 +907,7 @@ class table():
         return table_func
 
     @classmethod
-    def unique(cls, selection: Selection, as_pipe: bool=True) -> TableFunc:
+    def unique(cls, selection: Selection, as_pipe: bool=True) -> TableFunc | Pipe[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if not table_dict:
@@ -925,7 +925,7 @@ class table():
         return table_func
     
     @classmethod
-    def value_counts(cls, selection: Selection, as_pipe: bool=True) -> TableFunc:
+    def value_counts(cls, selection: Selection, as_pipe: bool=True) -> TableFunc | Pipe[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if not table_dict:
@@ -940,7 +940,7 @@ class table():
         return table_func
 
     @classmethod
-    def remove(cls, selection: Selection, as_pipe: bool=True) -> TableFunc:
+    def remove(cls, selection: Selection, as_pipe: bool=True) -> TableFunc | Pipe[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if not table_dict:
@@ -953,7 +953,7 @@ class table():
         return table_func
 
     @classmethod
-    def rename(cls, map: dict[str, str], as_pipe: bool=True) -> TableFunc:
+    def rename(cls, map: dict[str, str], as_pipe: bool=True) -> TableFunc | Pipe[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if not table_dict:
@@ -964,7 +964,7 @@ class table():
         return table_func
 
     @classmethod
-    def agg(cls, func_tuple: AggFunc|tuple[AggFunc], as_pipe: bool=True) -> Callable[[Table], Any|tuple[Any]]:
+    def agg(cls, func_tuple: AggFunc|tuple[AggFunc], as_pipe: bool=True) -> Callable[[Table], Any|tuple[Any]] | Pipe[Callable[[Table], Any|tuple[Any]]]:
         def agg_func(table_dict: Table) -> Any|tuple[Any]:
             cols = list(table_dict.values())
             if callable(func_tuple) and len(cols) > 1:
