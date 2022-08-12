@@ -74,7 +74,7 @@ def array_tuple_to_tuple_array(array_list: tuple[np.ndarray]|list[np.ndarray]) -
         a[:] = l
         return a
 
-def optimize_array_dtype(array):
+def optimize_array_dtype(array: np.ndarray) -> np.ndarray:
     return parse.list_to_array(list(array))
 
 
@@ -997,7 +997,9 @@ class table():
     @classmethod
     def topy(cls, as_pipe: bool=True) -> Callable[[Table], dict[str, list]] | Pipe[Callable[[Table], dict[str, list]]]:
         def table_func(table_dict: Table) -> Table:
-            return {key: optimize_array_dtype(col).tolist() for key, col in table_dict.items()}
+            #return {key: optimize_array_dtype(col).tolist() for key, col in table_dict.items()}
+            d = {key: optimize_array_dtype(col) for key, col in table_dict.items()}
+            return {key: col.tolist() for key, col in d.items()}
         if as_pipe:
             return Pipe(table_func)
         return table_func
