@@ -1088,7 +1088,14 @@ class Qfrom():
     # - import_csv
     # - (import_json)
     # - import_generator
-    def __init__(self, collection=None, operation_list=None, table_dict=None) -> Qfrom:
+    def __init__(
+        self,
+        collection=None,
+        operation_list=None,
+        table_dict=None,
+        delimiter: str = ',',
+        headers: bool = True
+        ) -> Qfrom:
         operation_list = operation_list or []
         self.__operation_list = operation_list
 
@@ -1097,7 +1104,7 @@ class Qfrom():
         else:
             self.table_dict = {}
             if isinstance(collection, str):
-                self.table_dict = parse.str_to_collection(collection)
+                self.table_dict = parse.str_to_collection(collection, delimiter, headers)
             elif isinstance(collection, dict):
                 self.table_dict = parse.iterables_to_arrays(collection)
             elif isinstance(collection, Qfrom):
