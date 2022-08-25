@@ -412,7 +412,7 @@ class table():
         return len(first(table_dict.values())) if table_dict else 0
 
     @classmethod
-    def eq(cls, other: Table, as_pipe: bool=True) -> Callable[[Table], bool] | Pipe[Callable[[Table], bool]]:
+    def eq(cls, other: Table) -> PipeOP[Callable[[Table], bool]]:
         def agg_func(table_dict: Table) -> bool:
             table_dict = parse.dict_to_table(table_dict)
             _other = parse.dict_to_table(other)
@@ -421,12 +421,10 @@ class table():
                     and all(key in table_dict for key in _other)\
                     and all(np.array_equal(col, _other[key]) for key, col in table_dict.items())
             return False
-        if as_pipe:
-            return Pipe(agg_func)
-        return agg_func
+        return PipeOP(agg_func)
 
     @classmethod
-    def contains(cls, row: tuple[Any]|dict[str,Any], as_pipe: bool=True) -> Callable[[Table], bool] | Pipe[Callable[[Table], bool]]:
+    def contains(cls, row: tuple[Any]|dict[str,Any]) -> PipeOP[Callable[[Table], bool]]:
         def agg_func(table_dict: Table) -> Any|tuple[Any]:
             if type(row) is tuple:
                 candidate_ids = np.arange(cls.len(table_dict))
@@ -444,12 +442,10 @@ class table():
                 return True
 
             raise ValueError('row must be of type tuple or dict')
-        if as_pipe:
-            return Pipe(agg_func)
-        return agg_func
+        return PipeOP(agg_func)
 
     @classmethod
-    def append(cls, item: tuple|dict[str,Any], as_pipe: bool=True) -> TableFunc | Pipe[TableFunc]:
+    def append(cls, item: tuple|dict[str,Any]) -> PipeOP[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if type(item) is tuple:
@@ -469,23 +465,19 @@ class table():
             key, col = first(table_dict.items())
             item_array = np.array([item])
             return {key:np.append(col if len(col) > 0 else np.array([], dtype=item_array.dtype), [item])}
-        if as_pipe:
-            return Pipe(table_func)
-        return table_func
+        return PipeOP(table_func)
 
     @classmethod
-    def getrow(cls, index: int|slice, as_pipe: bool=True) -> Callable[[Table], Any|tuple[Any]] | Pipe[Callable[[Table], Any|tuple[Any]]]:
+    def getrow(cls, index: int|slice) -> PipeOP[Callable[[Table], Any|tuple[Any]]]:
         def agg_func(table_dict: Table) -> Any|tuple[Any]:
             table_dict = parse.dict_to_table(table_dict)
             if isinstance(index, slice):
                 return {key: col[index] for key, col in table_dict.items()}
             return tuple(col[index] for col in table_dict.values()) if len(list(table_dict.values())) != 1 else first(table_dict.values())[index]
-        if as_pipe:
-            return Pipe(agg_func)
-        return agg_func
+        return PipeOP(agg_func)
 
     @classmethod
-    def select(cls, selection: Selection, as_pipe: bool=True) -> TableFunc | Pipe[TableFunc]:
+    def select(cls, selection: Selection) -> PipeOP[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if not table_dict:
@@ -493,18 +485,15 @@ class table():
             selected_keys = parse.selection(selection, keys=table_dict.keys())
             #return {key: table_dict[key] for key in selection}
             return {key: col for key, col in table_dict.items() if key in selected_keys}
-        if as_pipe:
-            return Pipe(table_func)
-        return table_func
+        return PipeOP(table_func)
     
     @classmethod
     def map(
         cls,
         args: Selection = None,
         func: ColFunc = None,
-        out: Selection = None,
-        as_pipe: bool=True
-        ) -> TableFunc | Pipe[TableFunc]:
+        out: Selection = None
+        ) -> PipeOP[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if not table_dict:
@@ -590,27 +579,22 @@ class table():
                 return {'y': parse.list_to_array([func_result for _ in first_col])}
 
             raise ValueError('cant interpret func result')
-        if as_pipe:
-            return Pipe(table_func)
-        return table_func
+        return PipeOP(table_func)
     
     @classmethod
     def map_join(
         cls,
         args: Selection = None,
         func: ColFunc = None,
-        out: Selection = None,
-        as_pipe: bool=True
-        ) -> TableFunc | Pipe[TableFunc]:
+        out: Selection = None
+        ) -> PipeOP[TableFunc]:
         map_func = table.map(args, func, out)
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             #mapped_dict = map_func(table_dict)
             mapped_dict = table_dict | map_func
             return table_dict | mapped_dict
-        if as_pipe:
-            return Pipe(table_func)
-        return table_func
+        return PipeOP(table_func)
 
     @classmethod
     def join(
@@ -618,9 +602,8 @@ class table():
         other: Table, 
         key_dict: dict[str, str] = None, 
         join_left_outer: bool = False, 
-        join_right_outer: bool = False,
-        as_pipe: bool=True
-        ) -> TableFunc | Pipe[TableFunc]:
+        join_right_outer: bool = False
+        ) -> PipeOP[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if not table_dict:
@@ -666,12 +649,10 @@ class table():
                 else:
                     result_dict = {**result_dict, key:col}
             return result_dict
-        if as_pipe:
-            return Pipe(table_func)
-        return table_func
+        return PipeOP(table_func)
     
     @classmethod
-    def join_cross(cls, other: Table, as_pipe: bool=True) -> TableFunc | Pipe[TableFunc]:
+    def join_cross(cls, other: Table) -> PipeOP[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if not table_dict:
@@ -688,18 +669,15 @@ class table():
             other_result_dict = {col_name:col[other_result_ids] for col_name, col in other.items()}
 
             return this_result_dict | other_result_dict
-        if as_pipe:
-            return Pipe(table_func)
-        return table_func
+        return PipeOP(table_func)
 
     @classmethod
     def join_id(
         cls,
         other: Table,
         join_left_outer: bool = False,
-        join_right_outer: bool = False,
-        as_pipe: bool=True
-        ) -> TableFunc | Pipe[TableFunc]:
+        join_right_outer: bool = False
+        ) -> PipeOP[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if not table_dict:
@@ -721,18 +699,15 @@ class table():
                 return {key: col[:len_other] for key, col in table_dict.items()} | other
             else:
                 return table_dict | {key: col[:len_table_dict] for key, col in other.items()}
-        if as_pipe:
-            return Pipe(table_func)
-        return table_func
+        return PipeOP(table_func)
 
     @classmethod
     def concat(
         cls,
         other: Table,
         join_left_outer: bool = False,
-        join_right_outer: bool = False,
-        as_pipe: bool=True
-        ) -> TableFunc | Pipe[TableFunc]:
+        join_right_outer: bool = False
+        ) -> PipeOP[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if join_left_outer and join_right_outer:
@@ -771,18 +746,15 @@ class table():
                 len_table_dict = len(first(table_dict.values()))
                 len_other = len(first(other.values()))
                 return {key: np.append(table_dict[key], other[key]) for key in set(table_dict.keys()) & set(other.keys())}
-        if as_pipe:
-            return Pipe(table_func)
-        return table_func
+        return PipeOP(table_func)
 
     @classmethod
     def concat_multiple(
         cls,
         others: Iterable[Table],
         join_left_outer: bool = False,
-        join_right_outer: bool = False,
-        as_pipe: bool=True
-        ) -> TableFunc | Pipe[TableFunc]:
+        join_right_outer: bool = False
+        ) -> PipeOP[TableFunc]:
         concat_func_list = [table.concat(other, join_left_outer, join_right_outer) for other in others]
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
@@ -791,18 +763,15 @@ class table():
                 #result_dict = f(result_dict)
                 result_dict = result_dict | f
             return result_dict
-        if as_pipe:
-            return Pipe(table_func)
-        return table_func
+        return PipeOP(table_func)
 
     @classmethod
     def orderby(
         cls,
         selection: Selection,
         func: ColFunc,
-        reverse: bool,
-        as_pipe: bool=True
-        ) -> TableFunc | Pipe[TableFunc]:
+        reverse: bool
+        ) -> PipeOP[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if not table_dict:
@@ -819,17 +788,14 @@ class table():
             if reverse:
                 return {key: col[ids][::-1] for key, col in table_dict.items()}
             return {key: col[ids] for key, col in table_dict.items()}
-        if as_pipe:
-            return Pipe(table_func)
-        return table_func
+        return PipeOP(table_func)
     
     @classmethod
     def where(
         cls,
         selection: Selection = None,
-        func: ColFunc = None,
-        as_pipe: bool=True
-        ) -> TableFunc | Pipe[TableFunc]:
+        func: ColFunc = None
+        ) -> PipeOP[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if not table_dict:
@@ -841,18 +807,15 @@ class table():
                 filter_array = np.logical_and.reduce(keys_array_list)
             filter_array = np.where(filter_array)
             return {key: col[filter_array] for key, col in table_dict.items()}
-        if as_pipe:
-            return Pipe(table_func)
-        return table_func
+        return PipeOP(table_func)
 
     @classmethod
     def groupby(
         cls,
         selection: Selection = None,
         func: ColFunc = None,
-        group_class: Any=None,
-        as_pipe: bool=True
-        ) -> Table | Pipe[TableFunc]:
+        group_class: Any=None
+        ) -> PipeOP[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if not table_dict:
@@ -882,12 +845,10 @@ class table():
                 'group': group_array}
 
             return result_dict
-        if as_pipe:
-            return Pipe(table_func)
-        return table_func
+        return PipeOP(table_func)
 
     @classmethod
-    def flatten(cls, selection: Selection, out: str = None, as_pipe: bool=True) -> TableFunc | Pipe[TableFunc]:
+    def flatten(cls, selection: Selection, out: str = None) -> PipeOP[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if not table_dict:
@@ -905,12 +866,10 @@ class table():
             scaled_table = {k: col[item_ids] for k, col in table_dict.items() if k!=out_key}
             new_row = {out_key: result_array}
             return scaled_table | new_row
-        if as_pipe:
-            return Pipe(table_func)
-        return table_func
+        return PipeOP(table_func)
 
     @classmethod
-    def unique(cls, selection: Selection, as_pipe: bool=True) -> TableFunc | Pipe[TableFunc]:
+    def unique(cls, selection: Selection) -> PipeOP[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if not table_dict:
@@ -923,12 +882,10 @@ class table():
 
             _, unique_ids = np.unique(key_array, return_index=True)
             return {key: col[unique_ids] for key, col in table_dict.items()}
-        if as_pipe:
-            return Pipe(table_func)
-        return table_func
+        return PipeOP(table_func)
     
     @classmethod
-    def value_counts(cls, selection: Selection, as_pipe: bool=True) -> TableFunc | Pipe[TableFunc]:
+    def value_counts(cls, selection: Selection) -> PipeOP[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if not table_dict:
@@ -938,12 +895,10 @@ class table():
             key_dict = {key: table_dict[key] for key in selected_keys}
             key_iter = cls.iter(key_dict)
             return key_array_to_value_counts(key_iter)
-        if as_pipe:
-            return Pipe(table_func)
-        return table_func
+        return PipeOP(table_func)
 
     @classmethod
-    def remove(cls, selection: Selection, as_pipe: bool=True) -> TableFunc | Pipe[TableFunc]:
+    def remove(cls, selection: Selection) -> PipeOP[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if not table_dict:
@@ -951,23 +906,19 @@ class table():
 
             selected_keys = parse.selection(selection, keys=table_dict.keys())
             return {key: col for key, col in table_dict.items() if key not in selected_keys}
-        if as_pipe:
-            return Pipe(table_func)
-        return table_func
+        return PipeOP(table_func)
 
     @classmethod
-    def rename(cls, map: dict[str, str], as_pipe: bool=True) -> TableFunc | Pipe[TableFunc]:
+    def rename(cls, map: dict[str, str]) -> PipeOP[TableFunc]:
         def table_func(table_dict: Table) -> Table:
             table_dict = parse.dict_to_table(table_dict)
             if not table_dict:
                 return table_dict
             return {map[key] if key in map else key: col for key, col in table_dict.items()}
-        if as_pipe:
-            return Pipe(table_func)
-        return table_func
+        return PipeOP(table_func)
 
     @classmethod
-    def agg(cls, func_tuple: AggFunc|tuple[AggFunc], as_pipe: bool=True) -> Callable[[Table], Any|tuple[Any]] | Pipe[Callable[[Table], Any|tuple[Any]]]:
+    def agg(cls, func_tuple: AggFunc|tuple[AggFunc]) -> PipeOP[Callable[[Table], Any|tuple[Any]]]:
         def agg_func(table_dict: Table) -> Any|tuple[Any]:
             cols = list(table_dict.values())
             if callable(func_tuple) and len(cols) > 1:
@@ -993,28 +944,24 @@ class table():
             if len(agg_result) == 1:
                 return agg_result[0]
             return tuple(agg_result)
-        if as_pipe:
-            return Pipe(agg_func)
-        return agg_func
+        return PipeOP(agg_func)
         
     @classmethod
-    def topy(cls, as_pipe: bool=True) -> Callable[[Table], dict[str, list]] | Pipe[Callable[[Table], dict[str, list]]]:
-        def table_func(table_dict: Table) -> Table:
-            #return {key: optimize_array_dtype(col).tolist() for key, col in table_dict.items()}
-            d = {key: optimize_array_dtype(col) for key, col in table_dict.items()}
-            return {key: col.tolist() for key, col in d.items()}
-        if as_pipe:
-            return Pipe(table_func)
-        return table_func
+    def topy(cls, table_dict: Table) -> dict[str, list]:
+        #return {key: optimize_array_dtype(col).tolist() for key, col in table_dict.items()}
+        d = {key: optimize_array_dtype(col) for key, col in table_dict.items()}
+        return {key: col.tolist() for key, col in d.items()}
 
 
-class Pipe():
+class PipeOP():
     def __init__(self, func: Callable):
         self.func = func
     def __ror__(self, value):
         return self.func(value)
+    def __call__(self, *args: Any, **kwds: Any) -> Any:
+        return self.func(*args, **kwds)
     def __str__(self):
-        return f'Pipe({str(self.func)})'
+        return f'PipeOP({str(self.func)})'
     def __repr__(self):
         return str(self)
 
