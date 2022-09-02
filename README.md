@@ -1,5 +1,5 @@
 # Qfrom_slim
-Qfrom provides a unified and simple query language for sets of data.
+Qfrom is a unified and simple to use tool for data manipulation and data analysis.
 This Project is based on Python 3.10.0
 
 For a first impression here a example of an imaginary company. This company consist of four peoble.
