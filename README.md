@@ -52,10 +52,10 @@ q
 
 Now Emma wants to see the average salary per job title. A tricky one, bot not for Bob...
 ```python
-q.groupby('job')\
-    .map('group', func.vec(lambda x: x['salary']))\
-    .map('group', func.vec(lambda x: x.agg(agg.mean)))\
-    .rename({'key': 'job', 'group': 'mean salary'})
+(q.groupby('job')
+    .map('group', func.vec(lambda x: x['salary']))
+    .map('group', func.vec(lambda x: x.agg(agg.mean)))
+    .rename({'key': 'job', 'group': 'mean salary'}))
 ```
 ```
 > Qfrom
