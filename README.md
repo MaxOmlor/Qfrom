@@ -2,7 +2,7 @@
 Qfrom is a unified and simple to use tool for data manipulation and data analysis.
 This Project is based on Python 3.10.0
 
-I come from C# and I'm used to the Linq lib and pandas dataframes annoyed me and like this the Qfrom package was born.
+I come from C# and I'm used to and in love with the Linq lib and pandas dataframes annoyed me and like this the Qfrom package was born.
 This is my take and adventure into datamanagement and numpy, from which, not least, a better understanding of pandas has emerged.
 now i wish you the best of fun with a first example of Qfrom in use.
 
