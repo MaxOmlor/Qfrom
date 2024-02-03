@@ -3,7 +3,8 @@ Qfrom is a unified and simple to use tool for data manipulation and data analysi
 This Project is based on Python 3.10.0
 
 I come from C# and I'm used to and in love with the Linq lib and pandas dataframes annoyed me and like this the Qfrom package was born.
-This is my take and adventure into datamanagement and numpy, from which, not least, a better understanding of pandas has emerged.
+This is my take and adventure into datamanagement, numpy and python, from which, not least, a better understanding of pandas has emerged.
+warning this project vaiolates also some of the holy python conventions. there is also a bit of coding black magic involved. in some caeses it even feels Qfrom can read your mind (#args-not-specified, #function-returning-multiple-columns). but just in case you asked your self i can asssure you there is no AI involved.
 now i wish you the best of fun with a first example of Qfrom in use.
 
 For a first impression here is a example of an imaginary company. This company consist of four peoble.
@@ -1935,7 +1936,7 @@ q.agg((agg.max, agg.min))
 
 # class col
 
-class is a colection of functions which can easily be applied to colums of in a Qfrom. 
+col class is a colection of functions which can easily be applied to colums of in a Qfrom. 
 
 import col like this
 
