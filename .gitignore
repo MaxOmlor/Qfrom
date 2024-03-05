@@ -2,6 +2,8 @@
 *.json
 *.cpython-310.pyc
 
+.venv/*
+
 /PyBasicsPackage
 
 tmp_func.py
